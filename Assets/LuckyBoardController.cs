@@ -44,10 +44,8 @@ public class LuckyBoardController : MonoBehaviour
       canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    public string GetLeaderboard(){ //Gets Leaderboard as JSON
-      Leaderboard leaderboardData;
-      StartCoroutine(GetLeaderboardRequest(score), value => leaderboardData = value);
-      return leaderboardData;
+    public void GetLeaderboard(System.Action<Leaderboard> callback){ //Gets Leaderboard as JSON
+      StartCoroutine(GetLeaderboardRequest("overview", callback));
     }
 
     public void ReportScore(int score){ //Reports a score for this user
@@ -55,19 +53,19 @@ public class LuckyBoardController : MonoBehaviour
     }
     
 
-    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<Leaderboard> result){ //"friends" "tier" or "overview"
+    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<Leaderboard> callback = null){ //"friends" "tier" or "overview"
         UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards?type="+type);
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
             Debug.Log("Get leaderboard error: " + www.error);
-            result(null);
+            callback(null);
         }
         else
         {
           var jsonString = www.downloadHandler.text;
-          Leaderboard leaderboard = JsonUtility.FromJson<Leaderboard>(json);
-          result(leaderboard);
+          Leaderboard leaderboard = JsonUtility.FromJson<Leaderboard>(jsonString);
+          callback(leaderboard);
         }
     }
 

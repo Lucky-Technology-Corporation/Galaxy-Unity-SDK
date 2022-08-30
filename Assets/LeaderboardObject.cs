@@ -1,8 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
-[Serializeable]
+[Serializable]
 public class LeaderboardObject{
     public string uid;
     public int rank;
@@ -11,7 +11,7 @@ public class LeaderboardObject{
     public string profile_image;
 }
 
-[Serializeable]
+[Serializable]
 public class Leaderboard{
     public List<LeaderboardObject> data;
 }
