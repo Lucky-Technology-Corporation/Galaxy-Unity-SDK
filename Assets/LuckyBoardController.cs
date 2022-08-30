@@ -14,18 +14,77 @@ public class LuckyBoardController : MonoBehaviour
     WebViewObject webViewObject;
     private string Url;
     private int topMargin = 180;
+    private string savedToken = "";
+
+    private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
+    private string frontendUrlBase = "https://b984-2603-3024-1f24-100-e46e-86fd-beb8-588a.ngrok.io";
     
     // Start is called before the first frame update
     void Start(){
       Debug.Log("Start LuckyBoard");
       canvas.GetComponent<Canvas>().enabled = false;
+      savedToken = PlayerPrefs.GetString("token");
+      if(true || savedToken == null || savedToken == ""){ //MARK: Debug!!
+        StartCoroutine(SignInAnonymously());
+      }
     }
 
-    private IEnumerator LoadUp()
-    {
-      print("LoadUp");
-      string savedToken = "";
-      Url = ("https://google.com?token=" + savedToken);
+    public void HideLeaderboard(){
+      webViewObject.SetVisibility(false);
+      canvas.GetComponent<Canvas>().enabled = false;
+    }
+
+    public void ShowLeaderboard(){
+      canvas.GetComponent<Canvas>().enabled = true;
+      if(webViewObject == null){
+        StartCoroutine(LoadUp());
+      }
+      else{
+        webViewObject.SetVisibility(true);
+      }
+    }
+
+    public void ReportScore(int score){
+      StartCoroutine(SendScoreReport(score))
+    }
+
+    private IEnumerator SendScoreReport(int score){
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+        formData.Add(new MultipartFormDataSection("score="+score));
+        UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/leaderboards/submit-score", formData);
+        www.SetRequestHeader("Authorization", savedToken);
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Score report error: " + www.error);
+        }
+        else
+        {
+          Debug.Log("Successful score submission");
+        }
+    }
+
+    private IEnumerator SignInAnonymously(){
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+        var bundle_id = Application.identifier;
+        formData.Add(new MultipartFormDataSection("game_id="+bundle_id+"&device_id="+SystemInfo.deviceUniqueIdentifier));
+        UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/login-anonymous", formData);
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Anonymous signin error: " + www.error);
+        }
+        else
+        {
+          savedToken = www.downloadHandler.text;
+          PlayerPrefs.SetString("token", savedToken);
+          Debug.Log("Got token: " + savedToken);
+        }
+    }
+
+    private IEnumerator LoadUp(){
+      savedToken = PlayerPrefs.GetString("token");
+      Url = (frontendUrlBase + "?token=" + savedToken);
 
       webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
       webViewObject.Init(
@@ -52,8 +111,18 @@ public class LuckyBoardController : MonoBehaviour
         ld: (msg) =>
         {
           Debug.Log("Loaded " + msg);
-          if(msg.Contains("?sdk_action=request_contacts")){
+          if(msg.Contains("sdk_action=request_contacts")){
             GetContacts();
+          }
+          else if(msg.Contains("sdk_action=save_token")){
+            string[] splitArray = msg.Split(new string[] {"token="}, System.StringSplitOptions.None);
+            if(splitArray.Length > 1){ 
+              string tokenStart = splitArray[1];
+              string[] safeTokenArray = tokenStart.Split(new string[] {"&"}, System.StringSplitOptions.None);
+              string tokenTrimmed = safeTokenArray[0];
+              PlayerPrefs.SetString("token", tokenTrimmed);
+              savedToken = tokenTrimmed;
+            }
           }
         },
         transparent: false,
@@ -113,41 +182,21 @@ public class LuckyBoardController : MonoBehaviour
       yield break;
     }
 
-    void Update()
-    {
-        
-    }
-
-    public void CloseView(){
-      webViewObject.SetVisibility(false);
-      canvas.GetComponent<Canvas>().enabled = false;
-    }
-
-    public void OpenView(){
-      canvas.GetComponent<Canvas>().enabled = true;
-      if(webViewObject == null){
-        StartCoroutine(LoadUp());
-      }
-      else{
-        webViewObject.SetVisibility(true);
-      }
-    }
-
-    public void GetContacts(){ //public for testing
+    private void GetContacts(){ //public for testing
       Contacts.LoadContactList(onDone, onLoadFailed);
     }
     
-    void onLoadFailed(string reason)
+    private void onLoadFailed(string reason)
     {
       Debug.Log("Failed for reason: " + reason);
     }
 
-    void onDone()
+    private void onDone()
     {
       Debug.Log("Count: " + Contacts.ContactsList.Count);
       Contact c = Contacts.ContactsList[0];
       Debug.Log("First Contact First Number: " + c.Phones[0].Number);
-      //Upload contacts here
+      //Sanatize and upload contacts here
     }
 
 

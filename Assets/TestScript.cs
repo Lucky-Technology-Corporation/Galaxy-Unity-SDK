@@ -28,7 +28,7 @@ public class TestScript : MonoBehaviour
     {
         if (Input.GetKeyDown("space"))
         {
-            controller.OpenView();
+            controller.ShowLeaderboard();
             print("space key was pressed");
         }
 
@@ -44,7 +44,7 @@ public class TestScript : MonoBehaviour
 
         if (deltaAcceleration.sqrMagnitude >= shakeDetectionThreshold)
         {
-            controller.OpenView();
+            controller.ShowLeaderboard();
             wasOpened = true;
             Debug.Log("Shake event detected at time "+Time.time);
         }
