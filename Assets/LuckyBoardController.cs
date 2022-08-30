@@ -7,7 +7,7 @@ using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
 
-
+//Make this a prefab!
 public class LuckyBoardController : MonoBehaviour
 {
     public Canvas canvas;
@@ -213,5 +213,22 @@ public class LuckyBoardController : MonoBehaviour
         webViewObject.SetVisibility(true);
       }
     }
+
+    public void GetContacts(){
+      Contacts.LoadContactList( onDone, onLoadFailed );
+    }
+    
+    void onLoadFailed( string reason )
+    {
+      Debug.Log(reason);
+    }
+
+    void onDone()
+    {
+      Debug.Log("Count: " + Contacts.ContactsList.Count);
+      Contact c = Contacts.ContactsList[0];
+      Debug.Log("First Contact First Number: " + c.Phones[0].Number);
+    }
+
 
 }
