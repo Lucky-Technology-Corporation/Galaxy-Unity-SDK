@@ -29,12 +29,7 @@ public class LuckyBoardController : MonoBehaviour
       }
     }
 
-    public void HideLeaderboard(){
-      webViewObject.SetVisibility(false);
-      canvas.GetComponent<Canvas>().enabled = false;
-    }
-
-    public void ShowLeaderboard(){
+    public void ShowLeaderboard(){ //Shows Leaderboard UI over screen
       canvas.GetComponent<Canvas>().enabled = true;
       if(webViewObject == null){
         StartCoroutine(LoadUp());
@@ -44,11 +39,40 @@ public class LuckyBoardController : MonoBehaviour
       }
     }
 
-    public void ReportScore(int score){
-      StartCoroutine(SendScoreReport(score))
+    public void HideLeaderboard(){ //Hides Leaderboard UI
+      webViewObject.SetVisibility(false);
+      canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    private IEnumerator SendScoreReport(int score){
+    public string GetLeaderboard(){ //Gets Leaderboard as JSON
+      Leaderboard leaderboardData;
+      StartCoroutine(GetLeaderboardRequest(score), value => leaderboardData = value);
+      return leaderboardData;
+    }
+
+    public void ReportScore(int score){ //Reports a score for this user
+      StartCoroutine(ReportScoreRequest(score));
+    }
+    
+
+    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<Leaderboard> result){ //"friends" "tier" or "overview"
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards?type="+type);
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Get leaderboard error: " + www.error);
+            result(null);
+        }
+        else
+        {
+          var jsonString = www.downloadHandler.text;
+          Leaderboard leaderboard = JsonUtility.FromJson<Leaderboard>(json);
+          result(leaderboard);
+        }
+    }
+
+
+    private IEnumerator ReportScoreRequest(int score){
         List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
         formData.Add(new MultipartFormDataSection("score="+score));
         UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/leaderboards/submit-score", formData);
