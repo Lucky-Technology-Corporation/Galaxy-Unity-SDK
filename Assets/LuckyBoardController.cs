@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Text;
 
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -27,7 +28,7 @@ public class LuckyBoardController : MonoBehaviour
         canvas.GetComponent<Canvas>().enabled = false;
         savedToken = PlayerPrefs.GetString("token");
         if (true || savedToken == null || savedToken == "")
-        { //MARK: Debug!!
+        { //MARK: Debug!
             StartCoroutine(SignInAnonymously());
         }
     }
@@ -82,11 +83,17 @@ public class LuckyBoardController : MonoBehaviour
 
     private IEnumerator ReportScoreRequest(int score)
     {
-        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
-        formData.Add(new MultipartFormDataSection("score=" + score));
-        UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/leaderboards/submit-score", formData);
+
+        var www = new UnityWebRequest(backendUrlBase + "/leaderboards/submit-score", "POST");
+
+        string bodyJsonString = "{ \"score\": \"" + score + "\" }";
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+        www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+        www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+        www.SetRequestHeader("Content-Type", "application/json");
         www.SetRequestHeader("Authorization", savedToken);
         yield return www.SendWebRequest();
+
         if (www.result != UnityWebRequest.Result.Success)
         {
             Debug.Log("Score report error: " + www.error);
@@ -99,18 +106,21 @@ public class LuckyBoardController : MonoBehaviour
 
     private IEnumerator SignInAnonymously()
     {
-        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
         var bundle_id = Application.identifier;
-        formData.Add(new MultipartFormDataSection("game_id=" + bundle_id + "&device_id=" + SystemInfo.deviceUniqueIdentifier));
+        bundle_id = "9f3ba349-99af-4f9a-9bfd-98cce2c1d5b7"; //MARK: Debug!
 
-        // byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
-        // request.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
-        // request.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
+        var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
 
-        UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/login-anonymous", formData);
+        string bodyJsonString = "{ \"game_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+        www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+        www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+        www.SetRequestHeader("Content-Type", "application/json");
+
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
+            Debug.Log(www.downloadHandler.text);
             Debug.Log("Anonymous signin error: " + www.error);
         }
         else
