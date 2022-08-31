@@ -17,7 +17,7 @@ public class LuckyBoardController : MonoBehaviour
     private string savedToken = "";
 
     private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
-    private string frontendUrlBase = "https://b984-2603-3024-1f24-100-e46e-86fd-beb8-588a.ngrok.io";
+    private string frontendUrlBase = "https://inanna.vercel.app";
     
     // Start is called before the first frame update
     void Start(){
@@ -90,6 +90,11 @@ public class LuckyBoardController : MonoBehaviour
         List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
         var bundle_id = Application.identifier;
         formData.Add(new MultipartFormDataSection("game_id="+bundle_id+"&device_id="+SystemInfo.deviceUniqueIdentifier));
+        
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+        request.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
+
         UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/login-anonymous", formData);
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
