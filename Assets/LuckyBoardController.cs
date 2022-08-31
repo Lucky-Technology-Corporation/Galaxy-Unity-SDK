@@ -91,9 +91,9 @@ public class LuckyBoardController : MonoBehaviour
         var bundle_id = Application.identifier;
         formData.Add(new MultipartFormDataSection("game_id="+bundle_id+"&device_id="+SystemInfo.deviceUniqueIdentifier));
         
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
-        request.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
-        request.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
+        // byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+        // request.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
+        // request.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
 
         UnityWebRequest www = UnityWebRequest.Post(backendUrlBase + "/login-anonymous", formData);
         yield return www.SendWebRequest();
