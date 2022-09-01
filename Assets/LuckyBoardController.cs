@@ -133,7 +133,6 @@ public class LuckyBoardController : MonoBehaviour
     private IEnumerator LoadUp()
     {
         savedToken = PlayerPrefs.GetString("token");
-        savedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbm9ueW1vdXMiOnRydWUsIm5pY2tuYW1lIjoiYzNjY2FlMDEtZjI5Mi00NTNiLTk2YmItYWRhNzk3YzhmMWM2IiwiZ2FtZV9pZCI6IjlmM2JhMzQ5LTk5YWYtNGY5YS05YmZkLTk4Y2NlMmMxZDViNyIsImlzcyI6Im11bHRpcGxheUBnYWxheHkudXMiLCJzdWIiOiIzYWE2NmI2ZC1iODJjLTQ4YTctYTRjZC02OGZlMzQ0N2ZmZmIiLCJhdWQiOlsiOWYzYmEzNDktOTlhZi00ZjlhLTliZmQtOThjY2UyYzFkNWI3Il0sIm5iZiI6MTY2MDk0NDQ0NywiaWF0IjoxNjYwOTQ0NDQ3LCJqdGkiOiI0YjhkNThmMi03ZjQ1LTQzYTQtYTFlYi0yNDFlNmFkYWU0MGEifQ.8wAJNlki6fh2oRubbJmWVQlfjwHjOT5Q-Q5m-O9WEC0";
         Url = (frontendUrlBase + "?token=" + savedToken);
 
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
