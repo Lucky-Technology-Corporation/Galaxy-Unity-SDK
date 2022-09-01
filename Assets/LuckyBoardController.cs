@@ -49,7 +49,7 @@ public class LuckyBoardController : MonoBehaviour
       StartCoroutine(GetLeaderboardRequest("overview", callback));
     }
 
-    public void ReportScore(int score){ //Reports a score for this user
+    public void ReportScore(double score){ //Reports a score for this user
       StartCoroutine(ReportScoreRequest(score));
     }
     
@@ -71,7 +71,7 @@ public class LuckyBoardController : MonoBehaviour
     }
 
 
-    private IEnumerator ReportScoreRequest(int score){
+    private IEnumerator ReportScoreRequest(double score){
 
         var www = new UnityWebRequest(backendUrlBase + "/leaderboards/submit-score", "POST");
 
@@ -82,7 +82,7 @@ public class LuckyBoardController : MonoBehaviour
         www.SetRequestHeader("Content-Type", "application/json");
         www.SetRequestHeader("Authorization", savedToken);
         yield return www.SendWebRequest();
-        
+
         if (www.result != UnityWebRequest.Result.Success)
         {
             Debug.Log("Score report error: " + www.error);
