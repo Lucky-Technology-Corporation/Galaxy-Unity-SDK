@@ -18,8 +18,7 @@ public class LuckyBoardController : MonoBehaviour
     private string savedToken = "";
 
     private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
-    // private string frontendUrlBase = "https://inanna.vercel.app";
-    private string frontendUrlBase = "https://b984-2603-3024-1f24-100-e46e-86fd-beb8-588a.ngrok.io";
+    private string frontendUrlBase = "https://inanna.vercel.app";
 
     // Start is called before the first frame update
     void Start()
