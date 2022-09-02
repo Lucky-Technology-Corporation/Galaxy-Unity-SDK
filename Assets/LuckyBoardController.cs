@@ -11,12 +11,15 @@ using UnityEngine.UI;
 //Make this a prefab!
 public class LuckyBoardController : MonoBehaviour
 {
+    //User Defined Properties
+    public string iOSLeaderboardID = "";
+    public string androidLeaderboardID = "";
+
     public Canvas canvas;
-    WebViewObject webViewObject;
+    private WebViewObject webViewObject;
     private string Url;
     private int topMargin = 180;
     private string savedToken = "";
-
     private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
     private string frontendUrlBase = "https://inanna.vercel.app";
     
@@ -45,17 +48,44 @@ public class LuckyBoardController : MonoBehaviour
       canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    public void GetLeaderboard(System.Action<Leaderboard> callback){ //Gets Leaderboard as JSON
+    public void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
       StartCoroutine(GetLeaderboardRequest("overview", callback));
     }
 
     public void ReportScore(double score){ //Reports a score for this user
-      StartCoroutine(ReportScoreRequest(score));
+      var body = "{\"score\":" + score + "}";
+      StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
+      ReportToPlatform(score);
+    }
+
+    public void ReportWin(bool didWin, string opponentId, double score = -1.0){
+      var body = "";
+      StartCoroutine(SendPostRequest("/leaderboards/submit-win", body));
+      ReportToPlatform(score);
+    }
+
+
+    private void ReportToPlatform(double score){
+      #if UNITY_IOS
+      if(iOSLeaderboardID != ""){
+        Social.ReportScore ((long)score, iOSLeaderboardID, success => {
+          Debug.Log(success ? "Reported score to GameCenter successfully" : "Failed to report score");
+        });
+      }
+      #endif
+
+      #if UNITY_ANDROID
+      if(androidLeaderboardID != ""){
+        Social.ReportScore ((long)score, androidLeaderboardID, success => {
+          Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report score");
+        });
+      }
+      #endif
     }
     
 
-    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<Leaderboard> callback = null){ //"friends" "tier" or "overview"
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards?type="+type);
+    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<List<Player>> callback = null){ //"friends" "tier" or "overview"
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards");
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
@@ -65,18 +95,15 @@ public class LuckyBoardController : MonoBehaviour
         else
         {
           var jsonString = www.downloadHandler.text;
-          Leaderboard leaderboard = JsonUtility.FromJson<Leaderboard>(jsonString);
+          List<Player> leaderboard = JsonUtility.FromJson<List<Player>>(jsonString);
           callback(leaderboard);
         }
     }
 
-
-    private IEnumerator ReportScoreRequest(double score){
-
-        var www = new UnityWebRequest(backendUrlBase + "/leaderboards/submit-score", "POST");
-
-        string bodyJsonString = "{ \"score\": \""+score+"\" }";
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+    private IEnumerator SendPostRequest(string urlRelativePath, string body = ""){
+        var www = new UnityWebRequest(backendUrlBase + urlRelativePath, "POST");
+        
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
         www.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
         www.SetRequestHeader("Content-Type", "application/json");
@@ -85,13 +112,14 @@ public class LuckyBoardController : MonoBehaviour
 
         if (www.result != UnityWebRequest.Result.Success)
         {
-            Debug.Log("Score report error: " + www.error);
+            Debug.Log("Lucky post report error: " + www.error);
         }
         else
         {
-          Debug.Log("Successful score submission");
+          Debug.Log("Successful lucky post");
         }
     }
+
 
     private IEnumerator SignInAnonymously(){
         var bundle_id = Application.identifier;
