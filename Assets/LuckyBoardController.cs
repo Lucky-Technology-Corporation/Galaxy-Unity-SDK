@@ -48,7 +48,8 @@ public class LuckyBoardController : MonoBehaviour
       canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    public void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
+    //Marked private during development
+    private void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
       StartCoroutine(GetLeaderboardRequest("overview", callback));
     }
 
@@ -58,8 +59,26 @@ public class LuckyBoardController : MonoBehaviour
       ReportToPlatform(score);
     }
 
-    public void ReportWin(bool didWin, string opponentId, double score = -1.0){
-      var body = "";
+    public void ReportOutcome(string[] placements, double[] scores = []){
+      var stringifiedPlacements = "[";
+      for(var i = 0; i < placements.Length; i++){
+        var delimeter = "";
+        if(i < placements.Length - 1){ delimeter = ", "; }
+        stringifiedPlacements += ("\""+placements[i]+"\"" + delimeter);
+      }
+      stringifiedPlacements += "]";
+
+      var stringifiedScores = "[";
+      if(scores.Length == placements.Length){
+        for(var i = 0; i < scores.Length; i++){
+          var delimeter = "";
+          if(i < scores.Length - 1){ delimeter = ", "; }
+          stringifiedScores += (scores[i] + delimeter);
+        }
+      }
+      stringifiedScores += "]";
+
+      var body = "{\"player_ids\":" + stringifiedPlacements + ", \"player_scores\":" + stringifiedScores "}";
       StartCoroutine(SendPostRequest("/leaderboards/submit-win", body));
       ReportToPlatform(score);
     }

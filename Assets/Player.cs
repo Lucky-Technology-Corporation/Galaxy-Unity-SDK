@@ -9,5 +9,5 @@ public class Player{
     public int total_players;
     public int highscore;
     public string nickname;
-    public string profile_image;
+    public string profile_image_url;
 }
