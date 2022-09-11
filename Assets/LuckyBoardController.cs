@@ -25,6 +25,7 @@ public class LuckyBoardController : MonoBehaviour
     private string frontendUrlBase = "https://inanna.vercel.app";
     
     private string currentPlayerId = "";
+    private Texture2D cachedProfileImage;
 
     // Start is called before the first frame update
     void Start(){
@@ -47,6 +48,27 @@ public class LuckyBoardController : MonoBehaviour
       StartCoroutine(SendPostRequest("/player/update-id", body));
     }
 
+    public void RefreshPlayerImageTexture(string imageUrl, bool forceDownload, System.Action<Texture2D> callback){
+      if(!forceDownload && cachedProfileImage != null){
+        callback(cachedProfileImage);
+      }
+      else{
+        StartCoroutine(DownloadImage(imageUrl, callback));
+      }
+    }
+
+    private IEnumerator DownloadImage(string MediaUrl, System.Action<Texture2D> callback)
+    {   
+        UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
+        yield return request.SendWebRequest();
+        if(request.isNetworkError || request.isHttpError) 
+          Debug.Log(request.error);
+          callback(null);
+        else
+          callback(((DownloadHandlerTexture) request.downloadHandler).texture);
+    } 
+
+
     public void GetPlayerInfo(System.Action<Player> callback){
       StartCoroutine(PlayerInfoRequest(callback));
     }
@@ -63,6 +85,9 @@ public class LuckyBoardController : MonoBehaviour
         {
           var jsonString = www.downloadHandler.text;
           Player player = JsonUtility.FromJson<Player>(jsonString);
+          RefreshPlayerImageTexture(player.profile_image_url, false, (Texture2D texture) => {
+            cachedProfileImage = texture;
+          });
           callback(player);
         }
     }
