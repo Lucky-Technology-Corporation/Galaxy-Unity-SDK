@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Text;
+using System;
 
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -23,15 +24,49 @@ public class LuckyBoardController : MonoBehaviour
     private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
     private string frontendUrlBase = "https://inanna.vercel.app";
     
+    private string currentPlayerId = "";
+
     // Start is called before the first frame update
     void Start(){
       Debug.Log("Start LuckyBoard");
       canvas.GetComponent<Canvas>().enabled = false;
       savedToken = PlayerPrefs.GetString("token");
+      currentPlayerId = PlayerPrefs.GetString("currentPlayerId");
       if(true || savedToken == null || savedToken == ""){ //MARK: Debug!
         StartCoroutine(SignInAnonymously());
       }
     }
+
+    public string GetPlayerID(){
+      return currentPlayerId;
+    }
+
+    public void SetPlayerID(string newId){
+      currentPlayerId = newId;
+      var body = "{\"id\":\"" + newId + "\"}";
+      StartCoroutine(SendPostRequest("/player/update-id", body));
+    }
+
+    public void GetPlayerInfo(System.Action<Player> callback){
+      StartCoroutine(PlayerInfoRequest(callback));
+    }
+
+    private IEnumerator PlayerInfoRequest(System.Action<Player> callback = null){
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/player");
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Get player error: " + www.error);
+            callback(null);
+        }
+        else
+        {
+          var jsonString = www.downloadHandler.text;
+          Player player = JsonUtility.FromJson<Player>(jsonString);
+          callback(player);
+        }
+    }
+    
 
     public void ShowLeaderboard(){ //Shows Leaderboard UI over screen
       canvas.GetComponent<Canvas>().enabled = true;
@@ -48,18 +83,13 @@ public class LuckyBoardController : MonoBehaviour
       canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    //Marked private during development
-    private void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
-      StartCoroutine(GetLeaderboardRequest("overview", callback));
-    }
-
     public void ReportScore(double score){ //Reports a score for this user
       var body = "{\"score\":" + score + "}";
       StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
       ReportToPlatform(score);
     }
 
-    public void ReportOutcome(string[] placements, double[] scores = []){
+    public void ReportOutcome(string[] placements, double[] scores = null){
       var stringifiedPlacements = "[";
       for(var i = 0; i < placements.Length; i++){
         var delimeter = "";
@@ -69,7 +99,7 @@ public class LuckyBoardController : MonoBehaviour
       stringifiedPlacements += "]";
 
       var stringifiedScores = "[";
-      if(scores.Length == placements.Length){
+      if(scores != null && scores.Length == placements.Length){
         for(var i = 0; i < scores.Length; i++){
           var delimeter = "";
           if(i < scores.Length - 1){ delimeter = ", "; }
@@ -78,9 +108,12 @@ public class LuckyBoardController : MonoBehaviour
       }
       stringifiedScores += "]";
 
-      var body = "{\"player_ids\":" + stringifiedPlacements + ", \"player_scores\":" + stringifiedScores "}";
+      var body = "{\"player_ids\":" + stringifiedPlacements + ", \"player_scores\":" + stringifiedScores + "}";
       StartCoroutine(SendPostRequest("/leaderboards/submit-win", body));
-      ReportToPlatform(score);
+
+      var thisPlayerIdIndex = Array.FindIndex(placements, x => x == currentPlayerId);
+      var thisPlayerScore = scores[thisPlayerIdIndex];
+      ReportToPlatform(thisPlayerScore);
     }
 
 
@@ -101,27 +134,9 @@ public class LuckyBoardController : MonoBehaviour
       }
       #endif
     }
-    
-
-    private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<List<Player>> callback = null){ //"friends" "tier" or "overview"
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards");
-        yield return www.SendWebRequest();
-        if (www.result != UnityWebRequest.Result.Success)
-        {
-            Debug.Log("Get leaderboard error: " + www.error);
-            callback(null);
-        }
-        else
-        {
-          var jsonString = www.downloadHandler.text;
-          List<Player> leaderboard = JsonUtility.FromJson<List<Player>>(jsonString);
-          callback(leaderboard);
-        }
-    }
 
     private IEnumerator SendPostRequest(string urlRelativePath, string body = ""){
         var www = new UnityWebRequest(backendUrlBase + urlRelativePath, "POST");
-        
         byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
         www.uploadHandler = (UploadHandler) new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
@@ -138,7 +153,6 @@ public class LuckyBoardController : MonoBehaviour
           Debug.Log("Successful lucky post");
         }
     }
-
 
     private IEnumerator SignInAnonymously(){
         var bundle_id = Application.identifier;
@@ -162,6 +176,8 @@ public class LuckyBoardController : MonoBehaviour
         {
           savedToken = www.downloadHandler.text;
           PlayerPrefs.SetString("token", savedToken);
+          //Todo: parse out UID from token
+          //currentPlayerId.SetString("currentPlayerId", currentPlayerId);
           Debug.Log("Got token: " + savedToken);
         }
     }
@@ -285,3 +301,25 @@ public class LuckyBoardController : MonoBehaviour
 
 
 }
+
+
+    // //Marked private during development
+    // private void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
+    //   StartCoroutine(GetLeaderboardRequest("overview", callback));
+    // }
+
+    // private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<List<Player>> callback = null){ //"friends" "tier" or "overview"
+    //     UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards");
+    //     yield return www.SendWebRequest();
+    //     if (www.result != UnityWebRequest.Result.Success)
+    //     {
+    //         Debug.Log("Get leaderboard error: " + www.error);
+    //         callback(null);
+    //     }
+    //     else
+    //     {
+    //       var jsonString = www.downloadHandler.text;
+    //       List<Player> leaderboard = JsonUtility.FromJson<List<Player>>(jsonString);
+    //       callback(leaderboard);
+    //     }
+    // }
