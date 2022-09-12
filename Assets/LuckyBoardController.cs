@@ -193,7 +193,7 @@ public class LuckyBoardController : MonoBehaviour
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
         www.SetRequestHeader("Content-Type", "application/json");
-        www.SetRequestHeader("Authorization", savedToken);
+        www.SetRequestHeader(GetAuthorizationType(), savedToken);
         yield return www.SendWebRequest();
 
         if (www.result != UnityWebRequest.Result.Success)
@@ -209,7 +209,7 @@ public class LuckyBoardController : MonoBehaviour
     private IEnumerator SignInAnonymously()
     {
         var bundle_id = Application.identifier;
-        bundle_id = "9f3ba349-99af-4f9a-9bfd-98cce2c1d5b7"; //MARK: Debug!
+        bundle_id = "94a4881a-3f6d-4365-8b21-ea7e7e55b908"; //MARK: Debug!
 
         var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
 
@@ -231,7 +231,7 @@ public class LuckyBoardController : MonoBehaviour
             PlayerPrefs.SetString("token", savedToken);
 
             currentPlayerId = getPlayerIdFromJWT(savedToken);
-            PlayerPrefs.SetString("currentPlayerId", playerId);
+            PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
         }
     }
 
@@ -313,7 +313,7 @@ public class LuckyBoardController : MonoBehaviour
                       savedToken = tokenTrimmed;
 
                       currentPlayerId = getPlayerIdFromJWT(savedToken);
-                      PlayerPrefs.SetString("currentPlayerId", playerId);
+                      PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
                   }
               }
           },
@@ -400,9 +400,33 @@ public class LuckyBoardController : MonoBehaviour
         //Sanatize and upload contacts here
     }
 
+    private String GetAuthorizationType()
+    {
+        var parts = savedToken.Split('.');
+        if (parts.Length > 2)
+        {
+            var decode = parts[1];
+            var padLength = 4 - decode.Length % 4;
+            if (padLength < 4)
+            {
+                decode += new string('=', padLength);
+            }
+            var bytes = System.Convert.FromBase64String(decode);
+            var userInfo = System.Text.ASCIIEncoding.ASCII.GetString(bytes);
+
+            if (userInfo.Contains("anonymous"))
+            {
+                var anonymous = userInfo.Split("\"anonymous\":\"")[1].Split("\"")[0];
+                if (anonymous != "true")
+                {
+                    return "Super-Authorization";
+                }
+            }
+        }
+        return "Anonymous-Authorization";
+    }
 
 }
-
 
 // //Marked private during development
 // private void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
