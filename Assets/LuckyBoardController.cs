@@ -33,7 +33,7 @@ public class LuckyBoardController : MonoBehaviour
       canvas.GetComponent<Canvas>().enabled = false;
       savedToken = PlayerPrefs.GetString("token");
       currentPlayerId = PlayerPrefs.GetString("currentPlayerId");
-      if(true || savedToken == null || savedToken == ""){ //MARK: Debug!
+      if(savedToken == null || savedToken == ""){
         StartCoroutine(SignInAnonymously());
       }
     }
@@ -48,7 +48,7 @@ public class LuckyBoardController : MonoBehaviour
       StartCoroutine(SendPostRequest("/player/update-id", body));
     }
 
-    public void RefreshPlayerImageTexture(string imageUrl, bool forceDownload, System.Action<Texture2D> callback){
+    public void GetPlayerImageTexture(string imageUrl, bool forceDownload, System.Action<Texture2D> callback){
       if(!forceDownload && cachedProfileImage != null){
         callback(cachedProfileImage);
       }
@@ -61,11 +61,13 @@ public class LuckyBoardController : MonoBehaviour
     {   
         UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
         yield return request.SendWebRequest();
-        if(request.isNetworkError || request.isHttpError) 
+        if(request.isNetworkError || request.isHttpError){ 
           Debug.Log(request.error);
           callback(null);
-        else
+        }
+        else{
           callback(((DownloadHandlerTexture) request.downloadHandler).texture);
+        }
     } 
 
 
@@ -85,7 +87,7 @@ public class LuckyBoardController : MonoBehaviour
         {
           var jsonString = www.downloadHandler.text;
           Player player = JsonUtility.FromJson<Player>(jsonString);
-          RefreshPlayerImageTexture(player.profile_image_url, false, (Texture2D texture) => {
+          GetPlayerImageTexture(player.profile_image_url, false, (Texture2D texture) => {
             cachedProfileImage = texture;
           });
           callback(player);
@@ -201,10 +203,38 @@ public class LuckyBoardController : MonoBehaviour
         {
           savedToken = www.downloadHandler.text;
           PlayerPrefs.SetString("token", savedToken);
-          //Todo: parse out UID from token
-          //currentPlayerId.SetString("currentPlayerId", currentPlayerId);
-          Debug.Log("Got token: " + savedToken);
+
+          currentPlayerId = getPlayerIdFromJWT(savedToken);
+          PlayerPrefs.SetString("currentPlayerId", playerId);
         }
+    }
+
+    private string getPlayerIdFromJWT(string token){
+      var parts = token.Split('.');
+      if (parts.Length > 2)
+      {
+        var decode = parts[1];
+        var padLength = 4 - decode.Length % 4;
+        if (padLength < 4)
+        {
+            decode += new string('=', padLength);
+        }
+        var bytes = System.Convert.FromBase64String(decode);
+        var userInfo = System.Text.ASCIIEncoding.ASCII.GetString(bytes);
+        
+        if(userInfo.Contains("user_id")){
+          var playerId = userInfo.Split("\"user_id\":\"")[1].Split("\"")[0];
+          return playerId;
+        }
+
+        //MARK: Debug!
+        if(userInfo.Contains("nickname")){
+          var nickname = userInfo.Split("\"nickname\":\"")[1].Split("\"")[0];
+          return nickname;
+        }
+
+      }
+      return "";
     }
 
     private IEnumerator LoadUp(){
@@ -245,8 +275,12 @@ public class LuckyBoardController : MonoBehaviour
               string tokenStart = splitArray[1];
               string[] safeTokenArray = tokenStart.Split(new string[] {"&"}, System.StringSplitOptions.None);
               string tokenTrimmed = safeTokenArray[0];
+
               PlayerPrefs.SetString("token", tokenTrimmed);
               savedToken = tokenTrimmed;
+
+              currentPlayerId = getPlayerIdFromJWT(savedToken);
+              PlayerPrefs.SetString("currentPlayerId", playerId);
             }
           }
         },
