@@ -325,6 +325,7 @@ public class LuckyBoardController : MonoBehaviour
           zoom: false,
           enableWKWebView: true,
           wkContentMode: 1,  // 0: recommended, 1: mobile, 2: desktop
+          androidForceDarkMode: 1,  // 0: follow system setting, 1: force dark off, 2: force dark on
           wkAllowsLinkPreview: false
         );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
@@ -355,9 +356,9 @@ public class LuckyBoardController : MonoBehaviour
                 if (src.Contains("://"))
                 {  // for Android
 #if UNITY_2018_4_OR_NEWER
-                var unityWebRequest = UnityWebRequest.Get(src);
-                yield return unityWebRequest.SendWebRequest();
-                result = unityWebRequest.downloadHandler.data;
+                    var unityWebRequest = UnityWebRequest.Get(src);
+                    yield return unityWebRequest.SendWebRequest();
+                    result = unityWebRequest.downloadHandler.data;
 #else
                 var www = new WWW(src);
                 yield return www;
