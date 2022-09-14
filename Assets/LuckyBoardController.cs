@@ -34,8 +34,9 @@ public class LuckyBoardController : MonoBehaviour
         canvas.GetComponent<Canvas>().enabled = false;
         savedToken = PlayerPrefs.GetString("token");
         currentPlayerId = PlayerPrefs.GetString("currentPlayerId");
-        if (savedToken == null || savedToken == "")
+        if (true || savedToken == null || savedToken == "")
         {
+            Debug.Log("Signing in...");
             StartCoroutine(SignInAnonymously());
         }
     }
@@ -116,6 +117,8 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
+            var UrlToRefresh = (frontendUrlBase + "?token=" + savedToken);
+            webViewObject.EvaluateJS("window.location = '" + UrlToRefresh + "';");
             webViewObject.SetVisibility(true);
         }
     }
@@ -227,6 +230,7 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
+            Debug.Log("Signed in!");
             savedToken = www.downloadHandler.text;
             PlayerPrefs.SetString("token", savedToken);
 
@@ -351,9 +355,9 @@ public class LuckyBoardController : MonoBehaviour
                 if (src.Contains("://"))
                 {  // for Android
 #if UNITY_2018_4_OR_NEWER
-                    var unityWebRequest = UnityWebRequest.Get(src);
-                    yield return unityWebRequest.SendWebRequest();
-                    result = unityWebRequest.downloadHandler.data;
+                var unityWebRequest = UnityWebRequest.Get(src);
+                yield return unityWebRequest.SendWebRequest();
+                result = unityWebRequest.downloadHandler.data;
 #else
                 var www = new WWW(src);
                 yield return www;
