@@ -32,6 +32,12 @@ public class TestScript : MonoBehaviour
             print("space key was pressed");
         }
 
+        if (Input.GetKeyDown("b"))
+        {
+            controller.ShowLeaderboard("", 0, 100);
+            print("space key was pressed");
+        }
+
         if (Input.GetKeyDown("a"))
         {
             Contacts.LoadContactList();

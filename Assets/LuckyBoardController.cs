@@ -15,8 +15,12 @@ public class LuckyBoardController : MonoBehaviour
     //User Defined Properties
     public string iOSLeaderboardID = "";
     public string androidLeaderboardID = "";
+    
+    private string currentGalaxyLeaderboardID = "";
 
     public Canvas canvas;
+    public GameObject closeButton;
+
     private WebViewObject webViewObject;
     private string Url;
     private int topMargin = 180;
@@ -108,8 +112,9 @@ public class LuckyBoardController : MonoBehaviour
     }
 
 
-    public void ShowLeaderboard()
+    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
     { //Shows Leaderboard UI over screen
+        currentGalaxyLeaderboardID = leaderboardId;
         canvas.GetComponent<Canvas>().enabled = true;
         if (webViewObject == null)
         {
@@ -117,8 +122,12 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
+            var originalX = closeButton.transform.position.x;
+            var originalY = closeButton.transform.position.y;
+            closeButton.transform.position = new Vector2(originalX + rightMargin, originalY - topMargin);
             var UrlToRefresh = (frontendUrlBase + "?token=" + savedToken);
             webViewObject.EvaluateJS("window.location = '" + UrlToRefresh + "';");
+            webViewObject.SetMargins(leftMargin, topMargin + 180, rightMargin, bottomMargin);
             webViewObject.SetVisibility(true);
         }
     }
@@ -274,6 +283,9 @@ public class LuckyBoardController : MonoBehaviour
     {
         savedToken = PlayerPrefs.GetString("token");
         Url = (frontendUrlBase + "?token=" + savedToken);
+        if(currentGalaxyLeaderboardID != ""){
+          Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
+        }
 
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
         webViewObject.Init(
