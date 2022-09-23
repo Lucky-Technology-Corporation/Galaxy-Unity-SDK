@@ -34,7 +34,7 @@ public class TestScript : MonoBehaviour
 
         if (Input.GetKeyDown("b"))
         {
-            controller.ShowLeaderboard("", 0, 100);
+            controller.ShowLeaderboard("", 0, 100, 25, 10);
             print("space key was pressed");
         }
 

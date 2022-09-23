@@ -122,8 +122,8 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
-            var originalX = closeButton.transform.position.x;
-            var originalY = closeButton.transform.position.y;
+            var originalX = Screen.width - 128;
+            var originalY = Screen.height - 128;
             closeButton.transform.position = new Vector2(originalX + rightMargin, originalY - topMargin);
             var UrlToRefresh = (frontendUrlBase + "?token=" + savedToken);
             webViewObject.EvaluateJS("window.location = '" + UrlToRefresh + "';");
