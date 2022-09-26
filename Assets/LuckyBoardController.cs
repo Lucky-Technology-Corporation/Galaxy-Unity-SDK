@@ -110,10 +110,10 @@ public class LuckyBoardController : MonoBehaviour
 
     public void GetPlayerRecord(string leaderboardId, System.Action<PlayerRecord> callback)
     {
-        StartCoroutine(PlayerRecordRequest(callback));
+        StartCoroutine(PlayerRecordRequest(leaderboardId, callback));
     }
 
-    private IEnumerator PlayerRecordRequest(System.Action<PlayerRecord> callback = null)
+    private IEnumerator PlayerRecordRequest(string leaderboardId, System.Action<PlayerRecord> callback = null)
     {
         UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/" + leaderboardId + "/player");
         yield return www.SendWebRequest();
@@ -171,7 +171,7 @@ public class LuckyBoardController : MonoBehaviour
         ReportToPlatform(score, leaderboard_id);
     }
 
-    public void ReportOutcome(string[] placements, double[] scores = null)
+    public void UpdateSkill(string matchId, string[] placements)
     {
         var stringifiedPlacements = "[";
         for (var i = 0; i < placements.Length; i++)
@@ -182,24 +182,9 @@ public class LuckyBoardController : MonoBehaviour
         }
         stringifiedPlacements += "]";
 
-        var stringifiedScores = "[";
-        if (scores != null && scores.Length == placements.Length)
-        {
-            for (var i = 0; i < scores.Length; i++)
-            {
-                var delimeter = "";
-                if (i < scores.Length - 1) { delimeter = ", "; }
-                stringifiedScores += (scores[i] + delimeter);
-            }
-        }
-        stringifiedScores += "]";
 
-        var body = "{\"player_ids\":" + stringifiedPlacements + ", \"player_scores\":" + stringifiedScores + "}";
+        var body = "{\"player_ids\":" + stringifiedPlacements + ", \"match_id\":" + matchId + "}";
         StartCoroutine(SendPostRequest("/leaderboards/submit-win", body));
-
-        var thisPlayerIdIndex = Array.FindIndex(placements, x => x == currentPlayerId);
-        var thisPlayerScore = scores[thisPlayerIdIndex];
-        ReportToPlatform(thisPlayerScore);
     }
 
 
