@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TestScript : MonoBehaviour
 {
@@ -17,10 +18,14 @@ public class TestScript : MonoBehaviour
     float lowPassFilterFactor;
     Vector3 lowPassValue;
 
+    public Image avatarImage;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        controller.GetPlayerAvatarTexture((imageTexture) =>{
+            avatarImage.sprite = Sprite.Create(imageTexture, new Rect(0.0f, 0.0f, imageTexture.width, imageTexture.height), Vector2.one * 0.5f);
+        });
     }
 
     // Update is called once per frame

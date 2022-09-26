@@ -3,12 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 
 [Serializable]
-public class Player
+public class PlayerInfo
 {
-    public string uid;
+    public string id;
+    public string nickname;
+    public string profile_image_url;
+}
+
+[Serializable]
+public class PlayerRecord
+{
+    public string id;
+    public int highscore;
     public int rank;
     public int total_players;
-    public int highscore;
     public string nickname;
     public string profile_image_url;
 }

@@ -13,8 +13,8 @@ using UnityEngine.UI;
 public class LuckyBoardController : MonoBehaviour
 {
     //User Defined Properties
-    public string iOSLeaderboardID = "";
-    public string androidLeaderboardID = "";
+    // public string iOSLeaderboardID = "";
+    // public string androidLeaderboardID = "";
     
     private string currentGalaxyLeaderboardID = "";
 
@@ -57,7 +57,7 @@ public class LuckyBoardController : MonoBehaviour
         StartCoroutine(SendPostRequest("/player/update-id", body));
     }
 
-    public void GetPlayerImageTexture(string imageUrl, bool forceDownload, System.Action<Texture2D> callback)
+    public void GetPlayerAvatarTexture(System.Action<Texture2D> callback, bool forceDownload = false)
     {
         if (!forceDownload && cachedProfileImage != null)
         {
@@ -65,6 +65,7 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
+            var imageUrl = frontendUrlBase + "/api/v1/player/" + currentPlayerId + "/avatar.png";
             StartCoroutine(DownloadImage(imageUrl, callback));
         }
     }
@@ -85,36 +86,55 @@ public class LuckyBoardController : MonoBehaviour
     }
 
 
-    public void GetPlayerInfo(System.Action<Player> callback)
+    public void GetPlayerInfo(System.Action<PlayerInfo> callback)
     {
         StartCoroutine(PlayerInfoRequest(callback));
     }
 
-    private IEnumerator PlayerInfoRequest(System.Action<Player> callback = null)
+    private IEnumerator PlayerInfoRequest(System.Action<PlayerInfo> callback = null)
     {
         UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/player");
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
-            Debug.Log("Get player error: " + www.error);
+            Debug.Log("Get player info error: " + www.error);
             callback(null);
         }
         else
         {
             var jsonString = www.downloadHandler.text;
-            Player player = JsonUtility.FromJson<Player>(jsonString);
-            GetPlayerImageTexture(player.profile_image_url, false, (Texture2D texture) =>
-            {
-                cachedProfileImage = texture;
-            });
-            callback(player);
+            PlayerInfo playerInfo = JsonUtility.FromJson<PlayerInfo>(jsonString);
+            callback(playerInfo);
+        }
+    }
+
+    public void GetPlayerRecord(string leaderboardId, System.Action<PlayerRecord> callback)
+    {
+        StartCoroutine(PlayerRecordRequest(callback));
+    }
+
+    private IEnumerator PlayerRecordRequest(System.Action<PlayerRecord> callback = null)
+    {
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/" + leaderboardId + "/player");
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Get player record error: " + www.error);
+            callback(null);
+        }
+        else
+        {
+            var jsonString = www.downloadHandler.text;
+            PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(jsonString);
+            callback(playerRecord);
         }
     }
 
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
-    { //Shows Leaderboard UI over screen
-        currentGalaxyLeaderboardID = leaderboardId;
+    {   
+        //Shows Leaderboard UI over screen
+        // currentGalaxyLeaderboardID = leaderboardId;
         canvas.GetComponent<Canvas>().enabled = true;
         if (webViewObject == null)
         {
@@ -138,11 +158,17 @@ public class LuckyBoardController : MonoBehaviour
         canvas.GetComponent<Canvas>().enabled = false;
     }
 
-    public void ReportScore(double score)
+    public void ReportScore(double score, string leaderboard_id = "")
     { //Reports a score for this user
         var body = "{\"score\":" + score + "}";
-        StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
-        ReportToPlatform(score);
+        if(leaderboard_id == ""){
+            StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
+        }
+        else{
+           StartCoroutine(SendPostRequest("/leaderboards/"+leaderboard_id+"/submit-score", body));
+        }
+
+        ReportToPlatform(score, leaderboard_id);
     }
 
     public void ReportOutcome(string[] placements, double[] scores = null)
@@ -177,24 +203,19 @@ public class LuckyBoardController : MonoBehaviour
     }
 
 
-    private void ReportToPlatform(double score)
+    private void ReportToPlatform(double score, string leaderboard_id)
     {
 #if UNITY_IOS
-      if(iOSLeaderboardID != ""){
-        Social.ReportScore ((long)score, iOSLeaderboardID, success => {
-          Debug.Log(success ? "Reported score to GameCenter successfully" : "Failed to report score");
-        });
-      }
+    Social.ReportScore ((long)score, leaderboard_id, success => {
+        Debug.Log(success ? "Reported score to GameCenter successfully" : "Failed to report ios score");
+    });
 #endif
 
 #if UNITY_ANDROID
-        if (androidLeaderboardID != "")
+        Social.ReportScore((long)score, leaderboard_id, success =>
         {
-            Social.ReportScore((long)score, androidLeaderboardID, success =>
-            {
-                Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report score");
-            });
-        }
+            Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report android score");
+        });
 #endif
     }
 
@@ -283,9 +304,9 @@ public class LuckyBoardController : MonoBehaviour
     {
         savedToken = PlayerPrefs.GetString("token");
         Url = (frontendUrlBase + "?token=" + savedToken);
-        if(currentGalaxyLeaderboardID != ""){
-          Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
-        }
+        // if(currentGalaxyLeaderboardID != ""){
+        //   Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
+        // }
 
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
         webViewObject.Init(
