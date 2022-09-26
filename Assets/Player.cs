@@ -14,7 +14,7 @@ public class PlayerInfo
 public class PlayerRecord
 {
     public string id;
-    public int highscore;
+    public int high_score;
     public int rank;
     public int total_players;
     public string nickname;

@@ -152,8 +152,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d52398f687a044f0daaa2198648d518b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iOSLeaderboardID: 
-  androidLeaderboardID: 
   canvas: {fileID: 241586676}
   closeButton: {fileID: 1302841433}
 --- !u!4 &166222338
@@ -996,3 +994,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controller: {fileID: 166222337}
+  avatarImage: {fileID: 1711303759}

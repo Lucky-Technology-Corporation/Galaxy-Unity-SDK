@@ -50,7 +50,7 @@ public class LuckyBoardController : MonoBehaviour
         return currentPlayerId;
     }
 
-    public void SetPlayerID(string newId)
+    public void SetPlayerID(string newId) //not set up yet
     {
         currentPlayerId = newId;
         var body = "{\"id\":\"" + newId + "\"}";
@@ -65,7 +65,8 @@ public class LuckyBoardController : MonoBehaviour
         }
         else
         {
-            var imageUrl = frontendUrlBase + "/api/v1/player/" + currentPlayerId + "/avatar.png";
+            var imageUrl = backendUrlBase + "/users/" + currentPlayerId + "/avatar.png";
+            Debug.Log("Downloading image from " + imageUrl);
             StartCoroutine(DownloadImage(imageUrl, callback));
         }
     }
@@ -93,7 +94,7 @@ public class LuckyBoardController : MonoBehaviour
 
     private IEnumerator PlayerInfoRequest(System.Action<PlayerInfo> callback = null)
     {
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/player");
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/profile");
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
@@ -115,7 +116,7 @@ public class LuckyBoardController : MonoBehaviour
 
     private IEnumerator PlayerRecordRequest(string leaderboardId, System.Action<PlayerRecord> callback = null)
     {
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/" + leaderboardId + "/player");
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/profile/" + leaderboardId);
         yield return www.SendWebRequest();
         if (www.result != UnityWebRequest.Result.Success)
         {
@@ -160,12 +161,14 @@ public class LuckyBoardController : MonoBehaviour
 
     public void ReportScore(double score, string leaderboard_id = "")
     { //Reports a score for this user
-        var body = "{\"score\":" + score + "}";
+        var body = "{\"score\":" + score;
         if(leaderboard_id == ""){
-            StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
+            body += "}";
+            StartCoroutine(SendPostRequest("/leaderboards/submit-individual-score", body));
         }
         else{
-           StartCoroutine(SendPostRequest("/leaderboards/"+leaderboard_id+"/submit-score", body));
+            body += ", \"leaderboard_id\": \"" + leaderboard_id + "\"}";
+            StartCoroutine(SendPostRequest("/leaderboards/submit-individual-score", body));
         }
 
         ReportToPlatform(score, leaderboard_id);
@@ -184,7 +187,7 @@ public class LuckyBoardController : MonoBehaviour
 
 
         var body = "{\"player_ids\":" + stringifiedPlacements + ", \"match_id\":" + matchId + "}";
-        StartCoroutine(SendPostRequest("/leaderboards/submit-win", body));
+        StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
     }
 
 
