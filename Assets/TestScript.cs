@@ -31,35 +31,39 @@ public class TestScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown("space"))
-        {
-            galaxyController.ShowLeaderboard();
-            print("space key was pressed");
-        }
+        // if (Input.GetKeyDown("space"))
+        // {
+        //     galaxyController.ShowLeaderboard();
+        //     print("space key was pressed");
+        // }
 
-        if (Input.GetKeyDown("b"))
-        {
-            galaxyController.ShowLeaderboard("", 0, 100, 25, 10);
-            print("space key was pressed");
-        }
+        // if (Input.GetKeyDown("b"))
+        // {
+        //     galaxyController.ShowLeaderboard("", 0, 100, 25, 10);
+        //     print("space key was pressed");
+        // }
 
-        if (Input.GetKeyDown("a"))
-        {
-            Contacts.LoadContactList();
-            print("a key was pressed");
-        }
+        // if (Input.GetKeyDown("a"))
+        // {
+        //     Contacts.LoadContactList();
+        //     print("a key was pressed");
+        // }
 
-        Vector3 acceleration = Input.acceleration;
-        lowPassValue = Vector3.Lerp(lowPassValue, acceleration, lowPassFilterFactor);
-        Vector3 deltaAcceleration = acceleration - lowPassValue;
+        // Vector3 acceleration = Input.acceleration;
+        // lowPassValue = Vector3.Lerp(lowPassValue, acceleration, lowPassFilterFactor);
+        // Vector3 deltaAcceleration = acceleration - lowPassValue;
 
-        if (deltaAcceleration.sqrMagnitude >= shakeDetectionThreshold)
-        {
-            controller.ShowLeaderboard();
-            wasOpened = true;
-            Debug.Log("Shake event detected at time "+Time.time);
-        }
+        // if (deltaAcceleration.sqrMagnitude >= shakeDetectionThreshold)
+        // {
+        //     galaxyController.ShowLeaderboard();
+        //     wasOpened = true;
+        //     Debug.Log("Shake event detected at time "+Time.time);
+        // }
 
+    }
+
+    public void OpenLeaderboard(){
+        galaxyController.ShowLeaderboard();
     }
 
 }
