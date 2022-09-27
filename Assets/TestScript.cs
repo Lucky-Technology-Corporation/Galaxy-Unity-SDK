@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class TestScript : MonoBehaviour
 {
-    public LuckyBoardController controller;
+    public GalaxyController galaxyController;
     bool wasOpened = false;
     float accelerometerUpdateInterval = 1.0f / 60.0f;
     // The greater the value of LowPassKernelWidthInSeconds, the slower the
@@ -23,7 +23,7 @@ public class TestScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        controller.GetPlayerAvatarTexture((imageTexture) =>{
+        galaxyController.GetPlayerAvatarTexture((imageTexture) =>{
             avatarImage.sprite = Sprite.Create(imageTexture, new Rect(0.0f, 0.0f, imageTexture.width, imageTexture.height), Vector2.one * 0.5f);
         });
     }
@@ -33,13 +33,13 @@ public class TestScript : MonoBehaviour
     {
         if (Input.GetKeyDown("space"))
         {
-            controller.ShowLeaderboard();
+            galaxyController.ShowLeaderboard();
             print("space key was pressed");
         }
 
         if (Input.GetKeyDown("b"))
         {
-            controller.ShowLeaderboard("", 0, 100, 25, 10);
+            galaxyController.ShowLeaderboard("", 0, 100, 25, 10);
             print("space key was pressed");
         }
 
@@ -61,4 +61,5 @@ public class TestScript : MonoBehaviour
         }
 
     }
+
 }

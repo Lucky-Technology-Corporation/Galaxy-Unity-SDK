@@ -10,12 +10,14 @@ using UnityEngine.Networking;
 using UnityEngine.UI;
 
 //Make this a prefab!
-public class LuckyBoardController : MonoBehaviour
+public class GalaxyController : MonoBehaviour
 {
     //User Defined Properties
     // public string iOSLeaderboardID = "";
     // public string androidLeaderboardID = "";
     
+    public string SDKKey;
+
     private string currentGalaxyLeaderboardID = "";
 
     public Canvas canvas;
