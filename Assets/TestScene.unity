@@ -1051,5 +1051,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4374eb7028a94a16a7bd5306e70b9f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  galaxyController: {fileID: 0}
+  galaxyController: {fileID: 166222337}
   avatarImage: {fileID: 1711303759}

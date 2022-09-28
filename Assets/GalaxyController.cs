@@ -34,10 +34,9 @@ public class GalaxyController : MonoBehaviour
     private Texture2D cachedProfileImage;
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        Debug.Log("Start LuckyBoard");
-        canvas.GetComponent<Canvas>().enabled = false;
+        Debug.Log("Initializing LuckyBoard");
         savedToken = PlayerPrefs.GetString("token");
         currentPlayerId = PlayerPrefs.GetString("currentPlayerId");
         if (true || savedToken == null || savedToken == "")
@@ -45,6 +44,10 @@ public class GalaxyController : MonoBehaviour
             Debug.Log("Signing in...");
             StartCoroutine(SignInAnonymously());
         }
+    }
+
+    void Start(){
+        canvas.GetComponent<Canvas>().enabled = false;
     }
 
     public string GetPlayerID()
