@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Text;
 using System;
+using System.Linq;
 
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -12,24 +13,25 @@ using UnityEngine.UI;
 //Make this a prefab!
 public class GalaxyController : MonoBehaviour
 {
-    //User Defined Properties
-    // public string iOSLeaderboardID = "";
-    // public string androidLeaderboardID = "";
     
     public string SDKKey;
 
+    public delegate void AvatarDidChange(Texture2D newAvatar);
+    public AvatarDidChange avatarDidChange;
+
+    public delegate void DidSignIn(string playerId);
+    public DidSignIn didSignIn;
+
+    public delegate void InfoDidChange(PlayerInfo info);
+    public InfoDidChange infoDidChange;
+
     private string currentGalaxyLeaderboardID = "";
-
-    public Canvas canvas;
-    public GameObject closeButton;
-
     private WebViewObject webViewObject;
     private string Url;
     private int topMargin = 180;
     private string savedToken = "";
     private string backendUrlBase = "https://ishtar-nft.herokuapp.com/api/v1";
     private string frontendUrlBase = "https://inanna.vercel.app";
-
     private string currentPlayerId = "";
     private Texture2D cachedProfileImage;
 
@@ -46,9 +48,6 @@ public class GalaxyController : MonoBehaviour
         }
     }
 
-    void Start(){
-        canvas.GetComponent<Canvas>().enabled = false;
-    }
 
     public string GetPlayerID()
     {
@@ -114,6 +113,28 @@ public class GalaxyController : MonoBehaviour
         }
     }
 
+    public void GetPlayerFriends(System.Action<List<PlayerInfo>> callback)
+    {
+        StartCoroutine(PlayerFriendsRequest(callback));
+    }
+
+    private IEnumerator PlayerFriendsRequest(System.Action<List<PlayerInfo>> callback = null)
+    {
+        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/friends");
+        yield return www.SendWebRequest();
+        if (www.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Get player friends error: " + www.error);
+            callback(null);
+        }
+        else
+        {
+            var jsonString = www.downloadHandler.text;
+            PlayerInfo[] playerInfo = JsonHelper.FromJson<PlayerInfo>(jsonString);
+            callback(playerInfo.ToList());
+        }
+    }
+
     public void GetPlayerRecord(string leaderboardId, System.Action<PlayerRecord> callback)
     {
         StartCoroutine(PlayerRecordRequest(leaderboardId, callback));
@@ -136,32 +157,30 @@ public class GalaxyController : MonoBehaviour
         }
     }
 
+    public void GetLeaderboardURL(string leaderboardId)
+    {
+        return (frontendUrlBase + "?token=" + savedToken);
+    }
 
-    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
+    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 180, int rightMargin = 0, int bottomMargin = 0)
     {   
-        //Shows Leaderboard UI over screen
-        // currentGalaxyLeaderboardID = leaderboardId;
-        canvas.GetComponent<Canvas>().enabled = true;
         if (webViewObject == null)
         {
             StartCoroutine(LoadUp());
+            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
         }
         else
         {
-            var originalX = Screen.width - 128;
-            var originalY = Screen.height - 128;
-            closeButton.transform.position = new Vector2(originalX + rightMargin, originalY - topMargin);
             var UrlToRefresh = (frontendUrlBase + "?token=" + savedToken);
             webViewObject.EvaluateJS("window.location = '" + UrlToRefresh + "';");
-            webViewObject.SetMargins(leftMargin, topMargin + 180, rightMargin, bottomMargin);
+            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
             webViewObject.SetVisibility(true);
         }
     }
 
     public void HideLeaderboard()
-    { //Hides Leaderboard UI
+    {
         webViewObject.SetVisibility(false);
-        canvas.GetComponent<Canvas>().enabled = false;
     }
 
     public void ReportScore(double score, string leaderboard_id = "")
@@ -346,6 +365,19 @@ public class GalaxyController : MonoBehaviour
                       PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
                   }
               }
+              else if(msg.Contains("sdk_action=signed_in")){
+                    didSignIn(currentPlayerId);
+              }
+              else if(msg.Contains("sdk_action=avatar_edited")){
+                    GetPlayerAvatarTexture((texture) => {
+                        avatarDidChange(texture);
+                    }, true);
+              }
+              else if(msg.Contains("sdk_action=info_changed")){ 
+                    GetPlayerInfo((info) => {
+                        infoDidChange(info);
+                    });
+              }
           },
           transparent: false,
           zoom: false,
@@ -354,14 +386,14 @@ public class GalaxyController : MonoBehaviour
           androidForceDarkMode: 1,  // 0: follow system setting, 1: force dark off, 2: force dark on
           wkAllowsLinkPreview: false
         );
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
-#endif
+        #endif
         webViewObject.SetMargins(0, topMargin, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
-#if !UNITY_WEBPLAYER && !UNITY_WEBGL
+        #if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http"))
         {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
@@ -381,15 +413,15 @@ public class GalaxyController : MonoBehaviour
                 byte[] result = null;
                 if (src.Contains("://"))
                 {  // for Android
-#if UNITY_2018_4_OR_NEWER
+                    #if UNITY_2018_4_OR_NEWER
                     var unityWebRequest = UnityWebRequest.Get(src);
                     yield return unityWebRequest.SendWebRequest();
                     result = unityWebRequest.downloadHandler.data;
-#else
-                var www = new WWW(src);
-                yield return www;
-                result = www.bytes;
-#endif
+                    #else
+                    var www = new WWW(src);
+                    yield return www;
+                    result = www.bytes;
+                    #endif
                 }
                 else
                 {
@@ -403,18 +435,18 @@ public class GalaxyController : MonoBehaviour
                 }
             }
         }
-#else
-      if (Url.StartsWith("http")) {
-          webViewObject.LoadURL(Url.Replace(" ", "%20"));
-      } else {
-          webViewObject.LoadURL("StreamingAssets/" + Url.Replace(" ", "%20"));
-      }
-#endif
+        #else
+        if (Url.StartsWith("http")) {
+            webViewObject.LoadURL(Url.Replace(" ", "%20"));
+        } else {
+            webViewObject.LoadURL("StreamingAssets/" + Url.Replace(" ", "%20"));
+        }
+        #endif
         yield break;
     }
 
     private void GetContacts()
-    { //public for testing
+    { 
         Contacts.LoadContactList(onDone, onLoadFailed);
     }
 
@@ -429,6 +461,23 @@ public class GalaxyController : MonoBehaviour
         Contact c = Contacts.ContactsList[0];
         Debug.Log("First Contact First Number: " + c.Phones[0].Number);
         //Sanatize and upload contacts here
+        var jsonToSend = "{\"contacts\": [";
+        for(var i = 0; i < Contacts.ContactsList.Count; i++){
+            var contact = Contacts.ContactsList[i];
+            var name = contact.Name;
+            var numberArray = contact.Phones.Select(x => x.Number).ToArray();
+            
+            for(var j = 0; j < numberArray.Length; j++){
+                var number = numberArray[j];
+                jsonToSend += "{\"name\": \"" + name + "\", \"phone_number\": \"" + number + "\"}";
+                if(i != Contacts.ContactsList.Count - 1 || j != numberArray.Length - 1){
+                    jsonToSend += ",";
+                }
+            }
+        }
+        jsonToSend += "]}";
+        Debug.Log(jsonToSend);
+        StartCoroutine(SendPostRequest("/users/update_contacts", jsonToSend));
     }
 
     private String GetAuthorizationType()

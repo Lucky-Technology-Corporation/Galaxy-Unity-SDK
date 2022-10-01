@@ -20,6 +20,8 @@ public class TestScript : MonoBehaviour
 
     public Image avatarImage;
 
+    public GameObject panel;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -63,7 +65,8 @@ public class TestScript : MonoBehaviour
     }
 
     public void OpenLeaderboard(){
-        galaxyController.ShowLeaderboard();
+        // galaxyController.AddLeaderboard(panel);
+        galaxyController.ShowLeaderboard("", 0, 553, 0, 0);
     }
 
 }
