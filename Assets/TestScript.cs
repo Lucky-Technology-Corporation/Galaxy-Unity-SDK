@@ -25,9 +25,35 @@ public class TestScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        galaxyController.GetPlayerInfo((playerInfo) =>
+        {
+            Debug.Log("Player nickname: " + playerInfo.nickname);
+        });
+        galaxyController.SetPlayerID("testPlayerId");
         galaxyController.GetPlayerAvatarTexture((imageTexture) =>{
             avatarImage.sprite = Sprite.Create(imageTexture, new Rect(0.0f, 0.0f, imageTexture.width, imageTexture.height), Vector2.one * 0.5f);
         });
+        galaxyController.infoDidChange += myPlayerInfoUpdateFunction;
+        galaxyController.avatarDidChange += myUpdateAvatarImageFunction;
+        galaxyController.didSignIn += myPlayerDidSignInFunction;
+    }
+
+    private void myPlayerInfoUpdateFunction(PlayerInfo info){
+        Debug.Log(info);
+        Debug.Log("New nickname is " + info.nickname);
+    }
+
+    private void myUpdateAvatarImageFunction(Texture2D newTexture){
+        avatarImage.sprite = Sprite.Create(newTexture, new Rect(0.0f, 0.0f, newTexture.width, newTexture.height), Vector2.one * 0.5f);
+    }
+
+    private void myPlayerDidSignInFunction(string playerId){
+        if(playerId == null){
+            Debug.Log("Failed to log in");
+        }
+        else{
+            Debug.Log(playerId + " has signed in!");
+        }
     }
 
     // Update is called once per frame

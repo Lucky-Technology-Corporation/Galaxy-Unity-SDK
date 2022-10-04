@@ -41,9 +41,9 @@ public class GalaxyController : MonoBehaviour
         Debug.Log("Initializing LuckyBoard");
         savedToken = PlayerPrefs.GetString("token");
         currentPlayerId = PlayerPrefs.GetString("currentPlayerId");
-        if (true || savedToken == null || savedToken == "")
+        if (savedToken == null || savedToken == "")
         {
-            Debug.Log("Signing in...");
+            Debug.Log("Signing in anonymously...");
             StartCoroutine(SignInAnonymously());
         }
     }
@@ -54,11 +54,10 @@ public class GalaxyController : MonoBehaviour
         return currentPlayerId;
     }
 
-    public void SetPlayerID(string newId) //not set up yet
+    public void SetPlayerID(string newId)
     {
-        currentPlayerId = newId;
         var body = "{\"id\":\"" + newId + "\"}";
-        StartCoroutine(SendPostRequest("/player/update-id", body));
+        SendRequest("/users/update_alias", body, "PATCH");
     }
 
     public void GetPlayerAvatarTexture(System.Action<Texture2D> callback, bool forceDownload = false)
@@ -93,71 +92,32 @@ public class GalaxyController : MonoBehaviour
 
     public void GetPlayerInfo(System.Action<PlayerInfo> callback)
     {
-        StartCoroutine(PlayerInfoRequest(callback));
-    }
-
-    private IEnumerator PlayerInfoRequest(System.Action<PlayerInfo> callback = null)
-    {
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/profile");
-        yield return www.SendWebRequest();
-        if (www.result != UnityWebRequest.Result.Success)
+        SendRequest("/users/profile", "", "GET", (response) =>
         {
-            Debug.Log("Get player info error: " + www.error);
-            callback(null);
-        }
-        else
-        {
-            var jsonString = www.downloadHandler.text;
-            PlayerInfo playerInfo = JsonUtility.FromJson<PlayerInfo>(jsonString);
-            callback(playerInfo);
-        }
+            var info = JsonUtility.FromJson<PlayerInfo>(response);
+            callback(info);
+        });
     }
 
     public void GetPlayerFriends(System.Action<List<PlayerInfo>> callback)
     {
-        StartCoroutine(PlayerFriendsRequest(callback));
-    }
-
-    private IEnumerator PlayerFriendsRequest(System.Action<List<PlayerInfo>> callback = null)
-    {
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/friends");
-        yield return www.SendWebRequest();
-        if (www.result != UnityWebRequest.Result.Success)
+        SendRequest("/users/friends", "", "GET", (response) =>
         {
-            Debug.Log("Get player friends error: " + www.error);
-            callback(null);
-        }
-        else
-        {
-            var jsonString = www.downloadHandler.text;
-            PlayerInfo[] playerInfo = JsonHelper.FromJson<PlayerInfo>(jsonString);
+            PlayerInfo[] playerInfo = JsonUtility.FromJson<PlayerInfo[]>(jsonString);
             callback(playerInfo.ToList());
-        }
+        });
     }
 
     public void GetPlayerRecord(string leaderboardId, System.Action<PlayerRecord> callback)
     {
-        StartCoroutine(PlayerRecordRequest(leaderboardId, callback));
-    }
-
-    private IEnumerator PlayerRecordRequest(string leaderboardId, System.Action<PlayerRecord> callback = null)
-    {
-        UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/users/profile/" + leaderboardId);
-        yield return www.SendWebRequest();
-        if (www.result != UnityWebRequest.Result.Success)
+        SendRequest("/users/profile/" + leaderboardId, "", "GET", (response) =>
         {
-            Debug.Log("Get player record error: " + www.error);
-            callback(null);
-        }
-        else
-        {
-            var jsonString = www.downloadHandler.text;
             PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(jsonString);
             callback(playerRecord);
-        }
+        });
     }
 
-    public void GetLeaderboardURL(string leaderboardId)
+    public string GetLeaderboardURL(string leaderboardId)
     {
         return (frontendUrlBase + "?token=" + savedToken);
     }
@@ -188,11 +148,11 @@ public class GalaxyController : MonoBehaviour
         var body = "{\"score\":" + score;
         if(leaderboard_id == ""){
             body += "}";
-            StartCoroutine(SendPostRequest("/leaderboards/submit-individual-score", body));
+            SendRequest("/leaderboards/submit-individual-score", body);
         }
         else{
             body += ", \"leaderboard_id\": \"" + leaderboard_id + "\"}";
-            StartCoroutine(SendPostRequest("/leaderboards/submit-individual-score", body));
+            SendRequest("/leaderboards/submit-individual-score", body);
         }
 
         ReportToPlatform(score, leaderboard_id);
@@ -211,7 +171,7 @@ public class GalaxyController : MonoBehaviour
 
 
         var body = "{\"player_ids\":" + stringifiedPlacements + ", \"match_id\":" + matchId + "}";
-        StartCoroutine(SendPostRequest("/leaderboards/submit-score", body));
+        SendRequest("/leaderboards/submit-score", body);
     }
 
 
@@ -231,9 +191,14 @@ public class GalaxyController : MonoBehaviour
 #endif
     }
 
-    private IEnumerator SendPostRequest(string urlRelativePath, string body = "")
+
+    private void SendRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null){
+        StartCoroutine(MakeRequest(urlRelativePath, body, method, callback));
+    }
+
+    private IEnumerator MakeRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null)
     {
-        var www = new UnityWebRequest(backendUrlBase + urlRelativePath, "POST");
+        var www = new UnityWebRequest(backendUrlBase + urlRelativePath, method);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
@@ -243,11 +208,12 @@ public class GalaxyController : MonoBehaviour
 
         if (www.result != UnityWebRequest.Result.Success)
         {
-            Debug.Log("Lucky post report error: " + www.error);
+            Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
         }
-        else
-        {
-            Debug.Log("Successful lucky post");
+        Debug.Log("gonna call if " + callback + " is not null");
+        if(callback != null){
+            Debug.Log("calling...");
+            callback(www.downloadHandler.text);
         }
     }
 
@@ -344,40 +310,50 @@ public class GalaxyController : MonoBehaviour
           },
           ld: (msg) =>
           {
-              Debug.Log("Loaded " + msg);
-              if (msg.Contains("sdk_action=request_contacts"))
-              {
-                  GetContacts();
-              }
-              else if (msg.Contains("sdk_action=save_token"))
-              {
-                  string[] splitArray = msg.Split(new string[] { "token=" }, System.StringSplitOptions.None);
-                  if (splitArray.Length > 1)
-                  {
-                      string tokenStart = splitArray[1];
-                      string[] safeTokenArray = tokenStart.Split(new string[] { "&" }, System.StringSplitOptions.None);
-                      string tokenTrimmed = safeTokenArray[0];
+            //First check for a new token
+            if (msg.Contains("save_token")){
+                Debug.Log("save_token");
+                string[] splitArray = msg.Split(new string[] { "token=" }, System.StringSplitOptions.None);
+                if (splitArray.Length > 1)
+                {
+                    string tokenStart = splitArray[1];
+                    string[] safeTokenArray = tokenStart.Split(new string[] { "&" }, System.StringSplitOptions.None);
+                    string tokenTrimmed = safeTokenArray[0];
 
-                      PlayerPrefs.SetString("token", tokenTrimmed);
-                      savedToken = tokenTrimmed;
+                    PlayerPrefs.SetString("token", tokenTrimmed);
+                    savedToken = tokenTrimmed;
 
-                      currentPlayerId = getPlayerIdFromJWT(savedToken);
-                      PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
-                  }
-              }
-              else if(msg.Contains("sdk_action=signed_in")){
+                    currentPlayerId = getPlayerIdFromJWT(savedToken);
+                    PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
+                    Debug.Log("Token was saved");
+                }
+
+                //Then check for other SDK actions
+                if (msg.Contains("request_contacts")){
+                    Debug.Log("request_contacts");
+                    GetContacts();
+                }
+                if(msg.Contains("signed_in")){
+                    Debug.Log("signed_in");
                     didSignIn(currentPlayerId);
-              }
-              else if(msg.Contains("sdk_action=avatar_edited")){
+                }
+                if(msg.Contains("avatar_edited")){
+                    Debug.Log("avatar_edited");
                     GetPlayerAvatarTexture((texture) => {
+                        Debug.Log("avatarDidChange");
                         avatarDidChange(texture);
                     }, true);
-              }
-              else if(msg.Contains("sdk_action=info_changed")){ 
-                    GetPlayerInfo((info) => {
-                        infoDidChange(info);
+                    
+                    Debug.Log("info_changed");
+                    GetPlayerInfo((playerInfo) => {
+                        Debug.Log("infoDidChange");
+                        Debug.Log(playerInfo);
+                        infoDidChange(playerInfo);
                     });
-              }
+                }
+
+
+            }
           },
           transparent: false,
           zoom: false,
@@ -477,12 +453,13 @@ public class GalaxyController : MonoBehaviour
         }
         jsonToSend += "]}";
         Debug.Log(jsonToSend);
-        StartCoroutine(SendPostRequest("/users/update_contacts", jsonToSend));
+        SendRequest("/users/update_contacts", jsonToSend);
     }
 
     private String GetAuthorizationType()
     {
         var parts = savedToken.Split('.');
+        Debug.Log(parts.Length);
         if (parts.Length > 2)
         {
             var decode = parts[1];
@@ -493,10 +470,12 @@ public class GalaxyController : MonoBehaviour
             }
             var bytes = System.Convert.FromBase64String(decode);
             var userInfo = System.Text.ASCIIEncoding.ASCII.GetString(bytes);
+            Debug.Log(userInfo);
 
             if (userInfo.Contains("anonymous"))
             {
-                var anonymous = userInfo.Split("\"anonymous\":\"")[1].Split("\"")[0];
+                var anonymous = userInfo.Split("\"anonymous\":")[1].Split(",\"")[0];
+                Debug.Log(anonymous);
                 if (anonymous != "true")
                 {
                     return "Super-Authorization";

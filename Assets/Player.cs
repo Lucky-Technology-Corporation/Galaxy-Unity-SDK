@@ -5,6 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class PlayerInfo
 {
+    public string global_id;
     public string id;
     public string nickname;
     public string profile_image_url;
@@ -13,6 +14,7 @@ public class PlayerInfo
 [Serializable]
 public class PlayerRecord
 {
+    public string global_id;
     public string id;
     public int high_score;
     public int rank;
