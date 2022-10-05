@@ -5,6 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class PlayerInfo
 {
+    public bool is_anonymous;
     public string global_id;
     public string id;
     public string nickname;
@@ -14,6 +15,7 @@ public class PlayerInfo
 [Serializable]
 public class PlayerRecord
 {
+    public bool is_anonymous;
     public string global_id;
     public string id;
     public int high_score;

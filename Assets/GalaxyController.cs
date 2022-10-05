@@ -35,6 +35,8 @@ public class GalaxyController : MonoBehaviour
     private string currentPlayerId = "";
     private Texture2D cachedProfileImage;
 
+    private bool shouldCloseOnNextSignInNotification = false;
+
     // Start is called before the first frame update
     void Awake()
     {
@@ -122,7 +124,8 @@ public class GalaxyController : MonoBehaviour
         return (frontendUrlBase + "/leaderboards/"+leaderboardId + "?token=" + savedToken);
     }
 
-    public void SignIn(){
+    public void SignIn(bool shouldCloseOnCompletion){
+        shouldCloseOnNextSignInNotification = shouldCloseOnCompletion;
         var urlToSignIn = frontendUrlBase + "/sign_in";
         SetupWebview(urlToSignIn, 0, 180, 0, 0);
     }
@@ -356,6 +359,10 @@ public class GalaxyController : MonoBehaviour
                 }
                 if(msg.Contains("signed_in")){
                     Debug.Log("signed_in");
+                    if(shouldCloseOnNextSignInNotification){
+                        shouldCloseOnNextSignInNotification = false;
+                        HideLeaderboard();
+                    }
                     didSignIn(currentPlayerId);
                 }
                 if(msg.Contains("avatar_edited")){
