@@ -103,7 +103,7 @@ public class GalaxyController : MonoBehaviour
     {
         SendRequest("/users/friends", "", "GET", (response) =>
         {
-            PlayerInfo[] playerInfo = JsonUtility.FromJson<PlayerInfo[]>(jsonString);
+            PlayerInfo[] playerInfo = JsonUtility.FromJson<PlayerInfo[]>(response);
             callback(playerInfo.ToList());
         });
     }
@@ -112,35 +112,44 @@ public class GalaxyController : MonoBehaviour
     {
         SendRequest("/users/profile/" + leaderboardId, "", "GET", (response) =>
         {
-            PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(jsonString);
+            PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
             callback(playerRecord);
         });
     }
 
     public string GetLeaderboardURL(string leaderboardId)
     {
-        return (frontendUrlBase + "?token=" + savedToken);
+        return (frontendUrlBase + "/leaderboards/"+leaderboardId + "?token=" + savedToken);
+    }
+
+    public void SignIn(){
+        var urlToSignIn = frontendUrlBase + "/sign_in";
+        SetupWebview(urlToSignIn, 0, 180, 0, 0);
     }
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 180, int rightMargin = 0, int bottomMargin = 0)
     {   
-        if (webViewObject == null)
-        {
-            StartCoroutine(LoadUp());
-            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
-        }
-        else
-        {
-            var UrlToRefresh = (frontendUrlBase + "?token=" + savedToken);
-            webViewObject.EvaluateJS("window.location = '" + UrlToRefresh + "';");
-            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
-            webViewObject.SetVisibility(true);
-        }
+        var UrlToRefresh = (frontendUrlBase + "/leaderboards/"+leaderboardId+"?token=" + savedToken);
+        SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
     public void HideLeaderboard()
     {
         webViewObject.SetVisibility(false);
+    }
+
+    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 180, int rightMargin = 0, int bottomMargin = 0){
+        if (webViewObject == null)
+        {
+            StartCoroutine(LoadUp(url));
+            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
+        }
+        else
+        {
+            webViewObject.EvaluateJS("window.location = '" + url + "';");
+            webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
+            webViewObject.SetVisibility(true);
+        }
     }
 
     public void ReportScore(double score, string leaderboard_id = "")
@@ -244,6 +253,18 @@ public class GalaxyController : MonoBehaviour
 
             currentPlayerId = getPlayerIdFromJWT(savedToken);
             PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
+
+            GetPlayerAvatarTexture((texture) => {
+                Debug.Log("avatarDidChange");
+                avatarDidChange(texture);
+            }, true);
+            
+            GetPlayerInfo((playerInfo) => {
+                Debug.Log("infoDidChange");
+                Debug.Log(playerInfo);
+                infoDidChange(playerInfo);
+            });
+
         }
     }
 
@@ -278,10 +299,10 @@ public class GalaxyController : MonoBehaviour
         return "";
     }
 
-    private IEnumerator LoadUp()
+    private IEnumerator LoadUp(string Url)
     {
-        savedToken = PlayerPrefs.GetString("token");
-        Url = (frontendUrlBase + "?token=" + savedToken);
+        // savedToken = PlayerPrefs.GetString("token");
+        // Url = (frontendUrlBase + "?token=" + savedToken);
         // if(currentGalaxyLeaderboardID != ""){
         //   Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
         // }
@@ -338,13 +359,11 @@ public class GalaxyController : MonoBehaviour
                     didSignIn(currentPlayerId);
                 }
                 if(msg.Contains("avatar_edited")){
-                    Debug.Log("avatar_edited");
                     GetPlayerAvatarTexture((texture) => {
                         Debug.Log("avatarDidChange");
                         avatarDidChange(texture);
                     }, true);
                     
-                    Debug.Log("info_changed");
                     GetPlayerInfo((playerInfo) => {
                         Debug.Log("infoDidChange");
                         Debug.Log(playerInfo);
