@@ -265,13 +265,13 @@ public class GalaxyController : MonoBehaviour
 
             GetPlayerAvatarTexture((texture) => {
                 Debug.Log("avatarDidChange");
-                avatarDidChange(texture);
+                if(avatarDidChange != null) { avatarDidChange(texture); }
             }, true);
             
             GetPlayerInfo((playerInfo) => {
                 Debug.Log("infoDidChange");
                 Debug.Log(playerInfo);
-                infoDidChange(playerInfo);
+                if(infoDidChange != null) { infoDidChange(playerInfo); }
             });
 
         }
@@ -350,10 +350,12 @@ public class GalaxyController : MonoBehaviour
                     PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
                     Debug.Log("Token was saved");
                 }
-            }
 
+            }
             //Then check for other SDK actions
             if(msg.Contains("sdk_action")){
+                Debug.Log("sdk_action");
+
                 if (msg.Contains("request_contacts")){
                     Debug.Log("request_contacts");
                     GetContacts();
@@ -364,27 +366,30 @@ public class GalaxyController : MonoBehaviour
                         shouldCloseOnNextSignInNotification = false;
                         HideLeaderboard();
                     }
-                    didSignIn(currentPlayerId);
+                    if(didSignIn != null) { didSignIn(currentPlayerId); }
                 }
                 if(msg.Contains("avatar_edited")){
                     GetPlayerAvatarTexture((texture) => {
                         Debug.Log("avatarDidChange");
-                        avatarDidChange(texture);
+                        if(avatarDidChange != null){ avatarDidChange(texture); }
                     }, true);
                     
                     GetPlayerInfo((playerInfo) => {
                         Debug.Log("infoDidChange");
                         Debug.Log(playerInfo);
-                        infoDidChange(playerInfo);
+                        if(infoDidChange != null){ infoDidChange(playerInfo); }
                     });
                 }
 
                 if(msg.Contains("close_window")){
+                    Debug.Log("!");
                     HideLeaderboard();
-                    userDidClose();
+                    if(userDidClose != null){ userDidClose(); }
                 }
+
             }
 
+            
           },
           transparent: false,
           zoom: false,
