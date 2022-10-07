@@ -27,10 +27,13 @@ public class GalaxyController : MonoBehaviour
     public delegate void InfoDidChange(PlayerInfo info);
     public InfoDidChange infoDidChange;
 
+    public delegate void UserDidClose();
+    public UserDidClose userDidClose;
+
     private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
     private string Url;
-    private int topMargin = 180;
+    // private int topMargin = 180;
     private string savedToken = "";
     private string backendUrlBase = "https://api.galaxy.us/api/v1";
     private string frontendUrlBase = "https://app.galaxy.us";
@@ -132,7 +135,7 @@ public class GalaxyController : MonoBehaviour
         SetupWebview(urlToSignIn, 0, 180, 0, 0);
     }
 
-    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 180, int rightMargin = 0, int bottomMargin = 0)
+    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
     {   
         var UrlToRefresh = (frontendUrlBase + "/leaderboards/"+leaderboardId+"?token=" + savedToken);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
@@ -143,7 +146,7 @@ public class GalaxyController : MonoBehaviour
         webViewObject.SetVisibility(false);
     }
 
-    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 180, int rightMargin = 0, int bottomMargin = 0){
+    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
         if (webViewObject == null)
         {
             StartCoroutine(LoadUp(url));
@@ -235,6 +238,7 @@ public class GalaxyController : MonoBehaviour
     private IEnumerator SignInAnonymously()
     {
         var bundle_id = Application.identifier;
+        bundle_id = "cb44bec7-9bad-4c2f-a5d3-b9ff0517a70c";
 
         var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
 
@@ -348,29 +352,36 @@ public class GalaxyController : MonoBehaviour
                 }
 
                 //Then check for other SDK actions
-                if (msg.Contains("request_contacts")){
-                    Debug.Log("request_contacts");
-                    GetContacts();
-                }
-                if(msg.Contains("signed_in")){
-                    Debug.Log("signed_in");
-                    if(shouldCloseOnNextSignInNotification){
-                        shouldCloseOnNextSignInNotification = false;
-                        HideLeaderboard();
+                if(msg.Contains("sdk_action")){
+                    if (msg.Contains("request_contacts")){
+                        Debug.Log("request_contacts");
+                        GetContacts();
                     }
-                    didSignIn(currentPlayerId);
-                }
-                if(msg.Contains("avatar_edited")){
-                    GetPlayerAvatarTexture((texture) => {
-                        Debug.Log("avatarDidChange");
-                        avatarDidChange(texture);
-                    }, true);
-                    
-                    GetPlayerInfo((playerInfo) => {
-                        Debug.Log("infoDidChange");
-                        Debug.Log(playerInfo);
-                        infoDidChange(playerInfo);
-                    });
+                    if(msg.Contains("signed_in")){
+                        Debug.Log("signed_in");
+                        if(shouldCloseOnNextSignInNotification){
+                            shouldCloseOnNextSignInNotification = false;
+                            HideLeaderboard();
+                        }
+                        didSignIn(currentPlayerId);
+                    }
+                    if(msg.Contains("avatar_edited")){
+                        GetPlayerAvatarTexture((texture) => {
+                            Debug.Log("avatarDidChange");
+                            avatarDidChange(texture);
+                        }, true);
+                        
+                        GetPlayerInfo((playerInfo) => {
+                            Debug.Log("infoDidChange");
+                            Debug.Log(playerInfo);
+                            infoDidChange(playerInfo);
+                        });
+                    }
+
+                    if(msg.Contains("close_window")){
+                        HideLeaderboard();
+                        userDidClose();
+                    }
                 }
 
 
@@ -386,7 +397,7 @@ public class GalaxyController : MonoBehaviour
         #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
         #endif
-        webViewObject.SetMargins(0, topMargin, 0, 0);
+        webViewObject.SetMargins(0, 0, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
