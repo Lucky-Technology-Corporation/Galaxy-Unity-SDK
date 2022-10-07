@@ -1,0 +1,19 @@
+{
+  "name": "com.intergalactic.galaxy",
+  "version": "1.0.0",
+  "displayName": "Galaxy",
+  "description": "Leaderboards, avatars, and currency",
+  "unity": "2021.3",
+  "unityRelease": "5f1",
+  "keywords": [
+    "leaderboard",
+    "avatar",
+    "currency"
+  ],
+  "author": {
+    "name": "Intergalactic Gaming, LLC",
+    "email": "support@galaxy.us",
+    "url": "https://galaxy.us"
+  },
+  "type": "template"
+}
