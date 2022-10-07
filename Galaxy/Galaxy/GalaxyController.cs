@@ -350,42 +350,41 @@ public class GalaxyController : MonoBehaviour
                     PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
                     Debug.Log("Token was saved");
                 }
+            }
 
-                //Then check for other SDK actions
-                if(msg.Contains("sdk_action")){
-                    if (msg.Contains("request_contacts")){
-                        Debug.Log("request_contacts");
-                        GetContacts();
-                    }
-                    if(msg.Contains("signed_in")){
-                        Debug.Log("signed_in");
-                        if(shouldCloseOnNextSignInNotification){
-                            shouldCloseOnNextSignInNotification = false;
-                            HideLeaderboard();
-                        }
-                        didSignIn(currentPlayerId);
-                    }
-                    if(msg.Contains("avatar_edited")){
-                        GetPlayerAvatarTexture((texture) => {
-                            Debug.Log("avatarDidChange");
-                            avatarDidChange(texture);
-                        }, true);
-                        
-                        GetPlayerInfo((playerInfo) => {
-                            Debug.Log("infoDidChange");
-                            Debug.Log(playerInfo);
-                            infoDidChange(playerInfo);
-                        });
-                    }
-
-                    if(msg.Contains("close_window")){
+            //Then check for other SDK actions
+            if(msg.Contains("sdk_action")){
+                if (msg.Contains("request_contacts")){
+                    Debug.Log("request_contacts");
+                    GetContacts();
+                }
+                if(msg.Contains("signed_in")){
+                    Debug.Log("signed_in");
+                    if(shouldCloseOnNextSignInNotification){
+                        shouldCloseOnNextSignInNotification = false;
                         HideLeaderboard();
-                        userDidClose();
                     }
+                    didSignIn(currentPlayerId);
+                }
+                if(msg.Contains("avatar_edited")){
+                    GetPlayerAvatarTexture((texture) => {
+                        Debug.Log("avatarDidChange");
+                        avatarDidChange(texture);
+                    }, true);
+                    
+                    GetPlayerInfo((playerInfo) => {
+                        Debug.Log("infoDidChange");
+                        Debug.Log(playerInfo);
+                        infoDidChange(playerInfo);
+                    });
                 }
 
-
+                if(msg.Contains("close_window")){
+                    HideLeaderboard();
+                    userDidClose();
+                }
             }
+
           },
           transparent: false,
           zoom: false,
