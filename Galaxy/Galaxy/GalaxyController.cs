@@ -17,7 +17,6 @@ public class GalaxyController : MonoBehaviour
     [Tooltip("Get this from the developer dashboard")]
     public string SDKKey;
 
-
     public delegate void AvatarDidChange(Texture2D newAvatar);
     public AvatarDidChange avatarDidChange;
 
@@ -33,7 +32,6 @@ public class GalaxyController : MonoBehaviour
     private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
     private string Url;
-    // private int topMargin = 180;
     private string savedToken = "";
     private string backendUrlBase = "https://api.galaxy.us/api/v1";
     private string frontendUrlBase = "https://app.galaxy.us";
@@ -267,11 +265,10 @@ public class GalaxyController : MonoBehaviour
     private IEnumerator SignInAnonymously()
     {
         var bundle_id = Application.identifier;
-        bundle_id = "cb44bec7-9bad-4c2f-a5d3-b9ff0517a70c";
 
         var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
 
-        string bodyJsonString = "{ \"game_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
+        string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
         byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
