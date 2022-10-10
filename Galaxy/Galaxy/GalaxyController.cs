@@ -39,6 +39,7 @@ public class GalaxyController : MonoBehaviour
     private string frontendUrlBase = "https://app.galaxy.us";
     private string currentPlayerId = "";
     private Texture2D cachedProfileImage;
+    private GameObject touchBlocker;
 
     private bool shouldCloseOnNextSignInNotification = false;
 
@@ -132,7 +133,7 @@ public class GalaxyController : MonoBehaviour
     public void SignIn(bool shouldCloseOnCompletion){
         shouldCloseOnNextSignInNotification = shouldCloseOnCompletion;
         var urlToSignIn = frontendUrlBase + "/sign_in";
-        SetupWebview(urlToSignIn, 0, 180, 0, 0);
+        SetupWebview(urlToSignIn, 0, 70, 0, 0);
     }
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
@@ -144,9 +145,10 @@ public class GalaxyController : MonoBehaviour
     public void HideLeaderboard()
     {
         webViewObject.SetVisibility(false);
+        touchBlocker.SetActive(false);
     }
 
-    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
+    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool skipTouchBlocker = false){
         if (webViewObject == null)
         {
             StartCoroutine(LoadUp(url));
@@ -158,6 +160,33 @@ public class GalaxyController : MonoBehaviour
             webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
             webViewObject.SetVisibility(true);
         }
+
+        if(skipTouchBlocker) { return; }
+        if(touchBlocker == null){
+            touchBlocker = new GameObject();
+            touchBlocker.name = "TouchBlocker";
+            var canvas = touchBlocker.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 10;
+            touchBlocker.AddComponent<GraphicRaycaster>();
+            var image = touchBlocker.AddComponent<Image>();
+            var hMargin = leftMargin + rightMargin;
+            var vMargin = topMargin + bottomMargin;
+            image.transform.localScale = new Vector3((Screen.width - hMargin) / 100, (Screen.height - vMargin) / 100, 1);
+            image.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0);
+            image.GetComponent<RectTransform>().anchorMax = new Vector2(0, 0);
+            image.GetComponent<RectTransform>().pivot = new Vector2(0,0);
+            image.GetComponent<RectTransform>().position = new Vector3(leftMargin, topMargin, 0);
+            image.color = new Color(0, 0, 0, 0.5f);
+        } else {
+            touchBlocker.SetActive(true);
+        }
+    }
+
+    public void OnMouseDown()
+    {
+        Debug.Log("Clicked");
+        return;
     }
 
     public void ReportScore(double score, string leaderboard_id = "")
@@ -333,6 +362,8 @@ public class GalaxyController : MonoBehaviour
           },
           ld: (msg) =>
           {
+            touchBlocker.GetComponent<Image>().color = new Color(0,0,0,1);
+            // webViewObject.EvaluateJS(@"document.body.style.background = 'black';");
             //First check for a new token
             if (msg.Contains("save_token")){
                 Debug.Log("save_token");
@@ -382,7 +413,7 @@ public class GalaxyController : MonoBehaviour
                 }
 
                 if(msg.Contains("close_window")){
-                    Debug.Log("!");
+                    Debug.Log("close window");
                     HideLeaderboard();
                     if(userDidClose != null){ userDidClose(); }
                 }
@@ -391,7 +422,7 @@ public class GalaxyController : MonoBehaviour
 
             
           },
-          transparent: false,
+          transparent: true,
           zoom: false,
           enableWKWebView: true,
           wkContentMode: 1,  // 0: recommended, 1: mobile, 2: desktop
