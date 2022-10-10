@@ -82,6 +82,10 @@ public class GalaxyController : MonoBehaviour
 
     private IEnumerator DownloadImage(string MediaUrl, System.Action<Texture2D> callback)
     {
+        if (savedToken == null || savedToken == ""){
+            yield return new WaitUntil(() => savedToken != null && savedToken != "");
+        }
+
         UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
         yield return request.SendWebRequest();
         if (request.isNetworkError || request.isHttpError)
@@ -242,6 +246,10 @@ public class GalaxyController : MonoBehaviour
 
     private IEnumerator MakeRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null)
     {
+        if (savedToken == null || savedToken == ""){
+            yield return new WaitUntil(() => savedToken != null && savedToken != "");
+        }
+        
         var www = new UnityWebRequest(backendUrlBase + urlRelativePath, method);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
@@ -269,6 +277,7 @@ public class GalaxyController : MonoBehaviour
         var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
 
         string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
+        Debug.Log(bodyJsonString);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
