@@ -51,6 +51,9 @@ public class GalaxyController : MonoBehaviour
         {
             Debug.Log("Signing in anonymously...");
             StartCoroutine(SignInAnonymously());
+        } else {
+            var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
+            StartCoroutine(LoadUp(url, true));
         }
     }
 
@@ -158,7 +161,7 @@ public class GalaxyController : MonoBehaviour
         }
         else
         {
-            webViewObject.EvaluateJS("window.location = '" + url + "';");
+            webViewObject.EvaluateJS("if(window.location != '"+url+"') { window.location = '" + url + "'; }");
             webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
             webViewObject.SetVisibility(true);
         }
@@ -249,7 +252,7 @@ public class GalaxyController : MonoBehaviour
         if (savedToken == null || savedToken == ""){
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
-        
+
         var www = new UnityWebRequest(backendUrlBase + urlRelativePath, method);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
         www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
@@ -308,7 +311,8 @@ public class GalaxyController : MonoBehaviour
                 Debug.Log(playerInfo);
                 if(infoDidChange != null) { infoDidChange(playerInfo); }
             });
-
+            var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
+            StartCoroutine(LoadUp(url, true));
         }
     }
 
@@ -336,7 +340,7 @@ public class GalaxyController : MonoBehaviour
         return "";
     }
 
-    private IEnumerator LoadUp(string Url)
+    private IEnumerator LoadUp(string Url, bool loadInvisibly = false)
     {
         // savedToken = PlayerPrefs.GetString("token");
         // Url = (frontendUrlBase + "?token=" + savedToken);
@@ -368,7 +372,9 @@ public class GalaxyController : MonoBehaviour
           },
           ld: (msg) =>
           {
-            touchBlocker.GetComponent<Image>().color = new Color(0,0,0,1);
+            if(!loadInvisibly){
+                touchBlocker.GetComponent<Image>().color = new Color(0,0,0,1);
+            }
             // webViewObject.EvaluateJS(@"document.body.style.background = 'black';");
             //First check for a new token
             if (msg.Contains("save_token")){
@@ -440,7 +446,11 @@ public class GalaxyController : MonoBehaviour
         #endif
         webViewObject.SetMargins(0, 0, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
-        webViewObject.SetVisibility(true);
+        if(loadInvisibly){
+            webViewObject.SetVisibility(false);    
+        } else {
+            webViewObject.SetVisibility(true);
+        }
 
         #if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http"))
