@@ -38,6 +38,7 @@ public class GalaxyController : MonoBehaviour
     private string currentPlayerId = "";
     private Texture2D cachedProfileImage;
     private GameObject touchBlocker;
+    private Button cancelButton;
 
     private bool shouldCloseOnNextSignInNotification = false;
 
@@ -52,6 +53,7 @@ public class GalaxyController : MonoBehaviour
             Debug.Log("Signing in anonymously...");
             StartCoroutine(SignInAnonymously());
         } else {
+            Debug.Log("Preloading with saved token...");
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
@@ -143,7 +145,20 @@ public class GalaxyController : MonoBehaviour
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
     {   
+        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+            Debug.LogError("No internet connection");
+            return; 
+        }
         var UrlToRefresh = (frontendUrlBase + "/leaderboards/"+leaderboardId+"?token=" + savedToken);
+        SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
+    }
+
+    public void ShowPayment(int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
+        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+            Debug.LogError("No internet connection");
+            return; 
+        }
+        var UrlToRefresh = (frontendUrlBase + "/points?token=" + savedToken);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
@@ -183,8 +198,28 @@ public class GalaxyController : MonoBehaviour
             image.GetComponent<RectTransform>().pivot = new Vector2(0,0);
             image.GetComponent<RectTransform>().position = new Vector3(leftMargin, topMargin, 0);
             image.color = new Color(0, 0, 0, 0.5f);
+
+            var loadingTextObject = new GameObject();
+            var loadingText = loadingTextObject.AddComponent<Image>();
+            loadingTextObject.name = "CancelButton";
+            loadingTextObject.transform.SetParent(touchBlocker.transform);
+            loadingTextObject.transform.localScale = new Vector3(1, 1, 1);
+            loadingTextObject.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0.5f);
+            loadingTextObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0.5f);
+            loadingTextObject.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+            loadingTextObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
+            loadingTextObject.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 213);
+            loadingText.color = new Color(1, 1, 1, 1);
+            loadingText.sprite = Resources.Load<Sprite>("loading");
+            
+            cancelButton = loadingTextObject.AddComponent<Button>();
+            cancelButton.onClick.AddListener(() => {
+                HideLeaderboard();
+            });
+
         } else {
             touchBlocker.SetActive(true);
+            cancelButton.interactable = true;
         }
     }
 
@@ -372,6 +407,8 @@ public class GalaxyController : MonoBehaviour
           },
           ld: (msg) =>
           {
+            if(cancelButton){ cancelButton.interactable = false; }
+
             if(!loadInvisibly){
                 touchBlocker.GetComponent<Image>().color = new Color(0,0,0,1);
             }
