@@ -229,16 +229,24 @@ public class GalaxyController : MonoBehaviour
         return;
     }
 
-    public void ReportScore(double score, string leaderboard_id = "")
+    public void ReportScore(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null)
     { //Reports a score for this user
         var body = "{\"score\":" + score;
         if(leaderboard_id == ""){
             body += "}";
-            SendRequest("/leaderboards/submit-individual-score", body);
+            SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
+            {
+                PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
+                callback(playerRecord);
+            });
         }
         else{
             body += ", \"leaderboard_id\": \"" + leaderboard_id + "\"}";
-            SendRequest("/leaderboards/submit-individual-score", body);
+            SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
+            {
+                PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
+                callback(playerRecord);
+            });
         }
 
         ReportToPlatform(score, leaderboard_id);
@@ -301,9 +309,8 @@ public class GalaxyController : MonoBehaviour
         {
             Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
         }
-        Debug.Log("gonna call if " + callback + " is not null");
         if(callback != null){
-            Debug.Log("calling...");
+            Debug.Log("Got this response back for " + urlRelativePath + ": " + www.downloadHandler.text);
             callback(www.downloadHandler.text);
         }
     }
@@ -579,7 +586,6 @@ public class GalaxyController : MonoBehaviour
     private String GetAuthorizationType()
     {
         var parts = savedToken.Split('.');
-        Debug.Log(parts.Length);
         if (parts.Length > 2)
         {
             var decode = parts[1];
