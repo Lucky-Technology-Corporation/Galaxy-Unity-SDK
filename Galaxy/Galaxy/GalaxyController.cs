@@ -468,6 +468,34 @@ public class GalaxyController : MonoBehaviour
                     });
                 }
 
+                if(msg.Contains("invite_friend")){
+                    var phoneNumber = msg.Split("phone_number=")[1].Split("&")[0];
+                    var name = msg.Split("name=")[1].Split("&")[0];
+                    var iosId = msg.Split("iOSID=")[1].Split("&")[0];
+                    var androidId = msg.Split("androidID=")[1].Split("&")[0];
+                    var gameName = msg.Split("gameName=")[1].Split("&")[0];
+
+                    string gameName = "Idle Tycoon";
+                    string iosLink = "https://apps.apple.com/app/" + iOSID;
+                    string androidLink = "https://play.google.com/store/apps/details?id=" + androidId;
+
+                    string message ="Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
+                    #if UNITY_ANDROID  
+                    message += androidLink;
+                    string URL = string.Format("sms:{0}?body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    #endif
+        
+                    #if UNITY_IOS
+                    message += iosLink;
+                    string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    #endif
+        
+                    //Execute Text Message
+                    Application.OpenURL(URL);
+                    HideLeaderboard();
+                }
+
+
                 if(msg.Contains("close_window")){
                     Debug.Log("close window");
                     HideLeaderboard();
