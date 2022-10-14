@@ -120,10 +120,12 @@ public class Contacts
 
     static void GetContactAndroid()
     {
+        #if UNITY_ANDROID
         ojc = new AndroidJavaClass("us.galaxy.contactlist.ContactList");
         AndroidJavaClass jc = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
         activity = jc.GetStatic<AndroidJavaObject>("currentActivity");
         ojc.CallStatic("LoadInformation", activity, true, true, true, true);
+        #endif
     }
 
 
