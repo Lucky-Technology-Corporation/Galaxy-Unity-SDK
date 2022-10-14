@@ -450,12 +450,15 @@ public class GalaxyController : MonoBehaviour
           },
           err: (msg) =>
           {
+            Hide();
           },
           httpErr: (msg) =>
           {
+            Hide();
           },
           started: (msg) =>
           {
+            //add the loading + close button here?
           },
           hooked: (msg) =>
           {
@@ -483,7 +486,6 @@ public class GalaxyController : MonoBehaviour
                     currentPlayerId = getPlayerIdFromJWT(savedToken);
                     PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
                 }
-
             }
             //Then check for other SDK actions
             if(msg.Contains("sdk_action")){
@@ -494,7 +496,7 @@ public class GalaxyController : MonoBehaviour
                 if(msg.Contains("signed_in")){
                     if(shouldCloseOnNextSignInNotification){
                         shouldCloseOnNextSignInNotification = false;
-                        HideLeaderboard();
+                        Hide();
                     }
                     if(didSignIn != null) { didSignIn(currentPlayerId); }
                 }
@@ -511,9 +513,9 @@ public class GalaxyController : MonoBehaviour
                 if(msg.Contains("invite_friend")){
                     var phoneNumber = msg.Split("phone_number=")[1].Split("&")[0];
                     var name = msg.Split("name=")[1].Split("&")[0];
-                    var iOSID = msg.Split("iOSID=")[1].Split("&")[0];
-                    var androidID = msg.Split("androidID=")[1].Split("&")[0];
-                    var gameName = msg.Split("gameName=")[1].Split("&")[0];
+                    var iOSID = msg.Split("ios_id=")[1].Split("&")[0];
+                    var androidID = msg.Split("android_id=")[1].Split("&")[0];
+                    var gameName = msg.Split("game_name=")[1].Split("&")[0];
 
                     string iosLink = "https://apps.apple.com/app/" + iOSID;
                     string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
