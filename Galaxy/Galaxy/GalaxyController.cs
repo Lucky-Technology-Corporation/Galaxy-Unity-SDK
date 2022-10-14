@@ -29,6 +29,9 @@ public class GalaxyController : MonoBehaviour
     public delegate void UserDidClose();
     public UserDidClose userDidClose;
 
+    public delegate void DidBuyCurrency(int amount);
+    public DidBuyCurrency didBuyCurrency;
+
     private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
     private string Url;
@@ -154,6 +157,7 @@ public class GalaxyController : MonoBehaviour
     }
 
     public void ShowPayment(int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
+        if(didBuyCurrency == null){ Debug.LogError("didBuyCurrency delegate not set"); }
         if(Application.internetReachability == NetworkReachability.NotReachable){ 
             Debug.LogError("No internet connection");
             return; 
@@ -162,6 +166,9 @@ public class GalaxyController : MonoBehaviour
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
+    public void Hide(){
+        HideLeaderboard();
+    }
     public void HideLeaderboard()
     {
         webViewObject.SetVisibility(false);
@@ -493,6 +500,18 @@ public class GalaxyController : MonoBehaviour
                     //Execute Text Message
                     Application.OpenURL(URL);
                     HideLeaderboard();
+                }
+
+                if(msg.Contains("convert_currency")){
+                    var amount = msg.Split("amount=")[1].Split("&")[0];
+                    var points = msg.Split("points=")[1].Split("&")[0];
+                    var currencyName = msg.Split("currency=")[1].Split("&")[0];
+                    
+                    if(didBuyCurrency != null){ didBuyCurrency(amount); }
+                    else{ 
+                        Debug.LogError("didBuyCurrency is null. Reverting transaction.");
+                        // SendRequest("/revert_transaction?amount=" + amount + "&points=" + points + "&currency=" + currencyName);
+                    }
                 }
 
 
