@@ -60,6 +60,21 @@ public class GalaxyController : MonoBehaviour
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
+        Application.lowMemory += OnLowMemory;
+    }
+
+    private void OnLowMemory()
+    {
+        // remove and recreate webview if invisible
+        if(!webViewObject.GetComponent<Renderer>().isVisible){
+            Debug.Log("Destroying and recreating leaderboard webview");
+            Destroy(webViewObject);
+            webViewObject = null;
+
+            savedToken = PlayerPrefs.GetString("token");
+            var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
+            StartCoroutine(LoadUp(url, true));
+        }
     }
 
 
@@ -157,7 +172,7 @@ public class GalaxyController : MonoBehaviour
     }
 
     public void ShowPayment(int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
-        if(didBuyCurrency == null){ Debug.LogError("didBuyCurrency delegate not set"); }
+        if(didBuyCurrency == null){ Debug.LogError("didBuyCurrency delegate not set"); return; }
         if(Application.internetReachability == NetworkReachability.NotReachable){ 
             Debug.LogError("No internet connection");
             return; 
@@ -237,14 +252,59 @@ public class GalaxyController : MonoBehaviour
     }
 
     public void ReportScore(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null)
-    { //Reports a score for this user
+    {
+        //Save scores if offline
+        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+            Debug.Log("No internet connection, saving score to be reported on next score submission");
+            string savedScoresList = PlayerPrefs.GetString("cachedScores") ?? "";
+            savedScoresList += score.ToString() + "|" + leaderboard_id + ",";
+            PlayerPrefs.SetString("cachedScores", savedScoresList);
+            return; 
+        }
+
+        //Get and report saved offline scores
+        string savedScores = PlayerPrefs.GetString("cachedScores") ?? "";
+        if(savedScores != ""){
+            List<string> cachedList = StringToList(savedScores, ",");
+            foreach(string cachedScore in cachedList){
+                var savedScore = cachedScore.Split('|')[0];
+                var savedLeaderboard = cachedScore.Split('|')[1];
+                Debug.Log("reported " + savedScore + " to " + savedLeaderboard);
+                MakeReport(double.Parse(savedScore), savedLeaderboard);
+            }
+        }
+        PlayerPrefs.SetString("cachedScores", "");
+
+        //Report this score
+        Debug.Log("reported " + score + " to " + leaderboard_id);
+        MakeReport(score, leaderboard_id, callback);
+    }
+
+    private List<string> StringToList(string message, string seperator)
+     {
+         List<string> ExportList = new List<string>();
+         string tok = "";
+         foreach(char character in message)
+         {
+             tok = tok + character;
+             if (tok.Contains(seperator))
+             {
+                 tok = tok.Replace(seperator, "");
+                 ExportList.Add(tok);
+                 tok = "";
+             }
+         }
+         return ExportList;
+     }
+
+    private void MakeReport(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null){
         var body = "{\"score\":" + score;
         if(leaderboard_id == ""){
             body += "}";
             SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
             {
                 PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                callback(playerRecord);
+                if(callback != null){ callback(playerRecord); }
             });
         }
         else{
@@ -252,7 +312,7 @@ public class GalaxyController : MonoBehaviour
             SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
             {
                 PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                callback(playerRecord);
+                if(callback != null){ callback(playerRecord); }
             });
         }
 
@@ -478,13 +538,12 @@ public class GalaxyController : MonoBehaviour
                 if(msg.Contains("invite_friend")){
                     var phoneNumber = msg.Split("phone_number=")[1].Split("&")[0];
                     var name = msg.Split("name=")[1].Split("&")[0];
-                    var iosId = msg.Split("iOSID=")[1].Split("&")[0];
-                    var androidId = msg.Split("androidID=")[1].Split("&")[0];
+                    var iOSID = msg.Split("iOSID=")[1].Split("&")[0];
+                    var androidID = msg.Split("androidID=")[1].Split("&")[0];
                     var gameName = msg.Split("gameName=")[1].Split("&")[0];
 
-                    string gameName = "Idle Tycoon";
                     string iosLink = "https://apps.apple.com/app/" + iOSID;
-                    string androidLink = "https://play.google.com/store/apps/details?id=" + androidId;
+                    string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
 
                     string message ="Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
                     #if UNITY_ANDROID  
@@ -507,11 +566,7 @@ public class GalaxyController : MonoBehaviour
                     var points = msg.Split("points=")[1].Split("&")[0];
                     var currencyName = msg.Split("currency=")[1].Split("&")[0];
                     
-                    if(didBuyCurrency != null){ didBuyCurrency(amount); }
-                    else{ 
-                        Debug.LogError("didBuyCurrency is null. Reverting transaction.");
-                        // SendRequest("/revert_transaction?amount=" + amount + "&points=" + points + "&currency=" + currencyName);
-                    }
+                    didBuyCurrency(int.Parse(amount));
                 }
 
 
