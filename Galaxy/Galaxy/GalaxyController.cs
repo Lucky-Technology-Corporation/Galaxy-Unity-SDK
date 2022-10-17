@@ -53,17 +53,21 @@ public class GalaxyController : MonoBehaviour
         if (savedToken == null || savedToken == "")
         {
             StartCoroutine(SignInAnonymously());
-        } else {
+        }
+        else
+        {
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
         Application.lowMemory += OnLowMemory;
+        DontDestroyOnLoad(gameObject);
     }
 
     private void OnLowMemory()
     {
         // remove and recreate webview if invisible
-        if(!webViewObject.GetComponent<Renderer>().isVisible){
+        if (!webViewObject.GetComponent<Renderer>().isVisible)
+        {
             Debug.Log("[Galaxy] Destroying and recreating webview to free up memory");
             Destroy(webViewObject);
             webViewObject = null;
@@ -73,7 +77,6 @@ public class GalaxyController : MonoBehaviour
             StartCoroutine(LoadUp(url, true));
         }
     }
-
 
     public string GetPlayerID()
     {
@@ -101,7 +104,8 @@ public class GalaxyController : MonoBehaviour
 
     private IEnumerator DownloadImage(string MediaUrl, System.Action<Texture2D> callback)
     {
-        if (savedToken == null || savedToken == ""){
+        if (savedToken == null || savedToken == "")
+        {
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
 
@@ -117,7 +121,6 @@ public class GalaxyController : MonoBehaviour
         }
     }
 
-
     public void GetPlayerInfo(System.Action<PlayerInfo> callback)
     {
         SendRequest("/users/profile", "", "GET", (response) =>
@@ -131,7 +134,7 @@ public class GalaxyController : MonoBehaviour
     {
         SendRequest("/users/friends", "", "GET", (response) =>
         {
-            if(response.Trim() == "[]"){ callback(new List<PlayerInfo>()); return; }
+            if (response.Trim() == "[]") { callback(new List<PlayerInfo>()); return; }
             PlayerInfo[] playerInfo = JsonUtility.FromJson<PlayerInfo[]>(response);
             callback(playerInfo.ToList());
         });
@@ -148,36 +151,41 @@ public class GalaxyController : MonoBehaviour
 
     public string GetLeaderboardURL(string leaderboardId)
     {
-        return (frontendUrlBase + "/leaderboards/"+leaderboardId + "?token=" + savedToken);
+        return (frontendUrlBase + "/leaderboards/" + leaderboardId + "?token=" + savedToken);
     }
 
-    public void SignIn(bool shouldCloseOnCompletion){
+    public void SignIn(bool shouldCloseOnCompletion)
+    {
         shouldCloseOnNextSignInNotification = shouldCloseOnCompletion;
         var urlToSignIn = frontendUrlBase + "/sign_in";
         SetupWebview(urlToSignIn, 0, 70, 0, 0);
     }
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
-    {   
-        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+    {
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
             Debug.LogError("No internet connection");
-            return; 
+            return;
         }
-        var UrlToRefresh = (frontendUrlBase + "/leaderboards/"+leaderboardId+"?token=" + savedToken);
+        var UrlToRefresh = (frontendUrlBase + "/leaderboards/" + leaderboardId + "?token=" + savedToken);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
-    public void ShowPayment(int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0){
-        if(didBuyCurrency == null){ Debug.LogError("didBuyCurrency delegate not set"); return; }
-        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+    public void ShowPayment(int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
+    {
+        if (didBuyCurrency == null) { Debug.LogError("didBuyCurrency delegate not set"); return; }
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
             Debug.LogError("No internet connection");
-            return; 
+            return;
         }
         var UrlToRefresh = (frontendUrlBase + "/points?token=" + savedToken);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
-    public void Hide(){
+    public void Hide()
+    {
         HideLeaderboard();
     }
     public void HideLeaderboard()
@@ -186,7 +194,8 @@ public class GalaxyController : MonoBehaviour
         touchBlocker.SetActive(false);
     }
 
-    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool skipTouchBlocker = false){
+    private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool skipTouchBlocker = false)
+    {
         if (webViewObject == null)
         {
             StartCoroutine(LoadUp(url));
@@ -194,13 +203,14 @@ public class GalaxyController : MonoBehaviour
         }
         else
         {
-            webViewObject.EvaluateJS("if(window.location != '"+url+"') { window.location = '" + url + "'; }");
+            webViewObject.EvaluateJS("if(window.location != '" + url + "') { window.location = '" + url + "'; }");
             webViewObject.SetMargins(leftMargin, topMargin, rightMargin, bottomMargin);
             webViewObject.SetVisibility(true);
         }
 
-        if(skipTouchBlocker) { return; }
-        if(touchBlocker == null){
+        if (skipTouchBlocker) { return; }
+        if (touchBlocker == null)
+        {
             touchBlocker = new GameObject();
             touchBlocker.name = "TouchBlocker";
             var canvas = touchBlocker.AddComponent<Canvas>();
@@ -213,7 +223,7 @@ public class GalaxyController : MonoBehaviour
             image.transform.localScale = new Vector3((Screen.width - hMargin) / 100, (Screen.height - vMargin) / 100, 1);
             image.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0);
             image.GetComponent<RectTransform>().anchorMax = new Vector2(0, 0);
-            image.GetComponent<RectTransform>().pivot = new Vector2(0,0);
+            image.GetComponent<RectTransform>().pivot = new Vector2(0, 0);
             image.GetComponent<RectTransform>().position = new Vector3(leftMargin, topMargin, 0);
             image.color = new Color(0, 0, 0, 0.5f);
 
@@ -229,13 +239,16 @@ public class GalaxyController : MonoBehaviour
             loadingTextObject.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 213);
             loadingText.color = new Color(1, 1, 1, 1);
             loadingText.sprite = Resources.Load<Sprite>("loading");
-            
+
             cancelButton = loadingTextObject.AddComponent<Button>();
-            cancelButton.onClick.AddListener(() => {
+            cancelButton.onClick.AddListener(() =>
+            {
                 HideLeaderboard();
             });
 
-        } else {
+        }
+        else
+        {
             touchBlocker.SetActive(true);
             cancelButton.interactable = true;
         }
@@ -249,19 +262,22 @@ public class GalaxyController : MonoBehaviour
     public void ReportScore(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null)
     {
         //Save scores if offline
-        if(Application.internetReachability == NetworkReachability.NotReachable){ 
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
             Debug.Log("No internet connection, saving score to be reported on next score submission");
             string savedScoresList = PlayerPrefs.GetString("cachedScores") ?? "";
             savedScoresList += score.ToString() + "|" + leaderboard_id + ",";
             PlayerPrefs.SetString("cachedScores", savedScoresList);
-            return; 
+            return;
         }
 
         //Get and report saved offline scores
         string savedScores = PlayerPrefs.GetString("cachedScores") ?? "";
-        if(savedScores != ""){
+        if (savedScores != "")
+        {
             List<string> cachedList = StringToList(savedScores, ",");
-            foreach(string cachedScore in cachedList){
+            foreach (string cachedScore in cachedList)
+            {
                 var savedScore = cachedScore.Split('|')[0];
                 var savedLeaderboard = cachedScore.Split('|')[1];
                 MakeReport(double.Parse(savedScore), savedLeaderboard);
@@ -274,38 +290,41 @@ public class GalaxyController : MonoBehaviour
     }
 
     private List<string> StringToList(string message, string seperator)
-     {
-         List<string> ExportList = new List<string>();
-         string tok = "";
-         foreach(char character in message)
-         {
-             tok = tok + character;
-             if (tok.Contains(seperator))
-             {
-                 tok = tok.Replace(seperator, "");
-                 ExportList.Add(tok);
-                 tok = "";
-             }
-         }
-         return ExportList;
-     }
+    {
+        List<string> ExportList = new List<string>();
+        string tok = "";
+        foreach (char character in message)
+        {
+            tok = tok + character;
+            if (tok.Contains(seperator))
+            {
+                tok = tok.Replace(seperator, "");
+                ExportList.Add(tok);
+                tok = "";
+            }
+        }
+        return ExportList;
+    }
 
-    private void MakeReport(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null){
+    private void MakeReport(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null)
+    {
         var body = "{\"score\":" + score;
-        if(leaderboard_id == ""){
+        if (leaderboard_id == "")
+        {
             body += "}";
             SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
             {
                 PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                if(callback != null){ callback(playerRecord); }
+                if (callback != null) { callback(playerRecord); }
             });
         }
-        else{
+        else
+        {
             body += ", \"leaderboard_id\": \"" + leaderboard_id + "\"}";
             SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
             {
                 PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                if(callback != null){ callback(playerRecord); }
+                if (callback != null) { callback(playerRecord); }
             });
         }
 
@@ -346,13 +365,15 @@ public class GalaxyController : MonoBehaviour
     }
 
 
-    private void SendRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null){
+    private void SendRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null)
+    {
         StartCoroutine(MakeRequest(urlRelativePath, body, method, callback));
     }
 
     private IEnumerator MakeRequest(string urlRelativePath, string body = "", string method = "POST", System.Action<string> callback = null)
     {
-        if (savedToken == null || savedToken == ""){
+        if (savedToken == null || savedToken == "")
+        {
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
 
@@ -369,7 +390,8 @@ public class GalaxyController : MonoBehaviour
         {
             Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
         }
-        if(callback != null){
+        if (callback != null)
+        {
             callback(www.downloadHandler.text);
         }
     }
@@ -399,12 +421,14 @@ public class GalaxyController : MonoBehaviour
             currentPlayerId = getPlayerIdFromJWT(savedToken);
             PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
 
-            GetPlayerAvatarTexture((texture) => {
-                if(avatarDidChange != null) { avatarDidChange(texture); }
+            GetPlayerAvatarTexture((texture) =>
+            {
+                if (avatarDidChange != null) { avatarDidChange(texture); }
             }, true);
-            
-            GetPlayerInfo((playerInfo) => {
-                if(infoDidChange != null) { infoDidChange(playerInfo); }
+
+            GetPlayerInfo((playerInfo) =>
+            {
+                if (infoDidChange != null) { infoDidChange(playerInfo); }
             });
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
@@ -450,109 +474,121 @@ public class GalaxyController : MonoBehaviour
           },
           err: (msg) =>
           {
-            Hide();
+              Hide();
           },
           httpErr: (msg) =>
           {
-            Hide();
+              Hide();
           },
           started: (msg) =>
           {
-            //add the loading + close button here?
+              //add the loading + close button here?
           },
           hooked: (msg) =>
           {
           },
           ld: (msg) =>
           {
-            if(cancelButton){ cancelButton.interactable = false; }
+              if (cancelButton) { cancelButton.interactable = false; }
 
-            if(!loadInvisibly){
-                touchBlocker.GetComponent<Image>().color = new Color(0,0,0,1);
-            }
-            // webViewObject.EvaluateJS(@"document.body.style.background = 'black';");
-            //First check for a new token
-            if (msg.Contains("save_token")){
-                string[] splitArray = msg.Split(new string[] { "token=" }, System.StringSplitOptions.None);
-                if (splitArray.Length > 1)
-                {
-                    string tokenStart = splitArray[1];
-                    string[] safeTokenArray = tokenStart.Split(new string[] { "&" }, System.StringSplitOptions.None);
-                    string tokenTrimmed = safeTokenArray[0];
+              if (!loadInvisibly)
+              {
+                  touchBlocker.GetComponent<Image>().color = new Color(0, 0, 0, 1);
+              }
+              // webViewObject.EvaluateJS(@"document.body.style.background = 'black';");
+              //First check for a new token
+              if (msg.Contains("save_token"))
+              {
+                  string[] splitArray = msg.Split(new string[] { "token=" }, System.StringSplitOptions.None);
+                  if (splitArray.Length > 1)
+                  {
+                      string tokenStart = splitArray[1];
+                      string[] safeTokenArray = tokenStart.Split(new string[] { "&" }, System.StringSplitOptions.None);
+                      string tokenTrimmed = safeTokenArray[0];
 
-                    PlayerPrefs.SetString("token", tokenTrimmed);
-                    savedToken = tokenTrimmed;
+                      PlayerPrefs.SetString("token", tokenTrimmed);
+                      savedToken = tokenTrimmed;
 
-                    currentPlayerId = getPlayerIdFromJWT(savedToken);
-                    PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
-                }
-            }
-            //Then check for other SDK actions
-            if(msg.Contains("sdk_action")){
+                      currentPlayerId = getPlayerIdFromJWT(savedToken);
+                      PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
+                  }
+              }
+              //Then check for other SDK actions
+              if (msg.Contains("sdk_action"))
+              {
 
-                if (msg.Contains("request_contacts")){
-                    GetContacts();
-                }
-                if(msg.Contains("signed_in")){
-                    if(shouldCloseOnNextSignInNotification){
-                        shouldCloseOnNextSignInNotification = false;
-                        Hide();
-                    }
-                    if(didSignIn != null) { didSignIn(currentPlayerId); }
-                }
-                if(msg.Contains("avatar_edited")){
-                    GetPlayerAvatarTexture((texture) => {
-                        if(avatarDidChange != null){ avatarDidChange(texture); }
-                    }, true);
-                    
-                    GetPlayerInfo((playerInfo) => {
-                        if(infoDidChange != null){ infoDidChange(playerInfo); }
-                    });
-                }
+                  if (msg.Contains("request_contacts"))
+                  {
+                      GetContacts();
+                  }
+                  if (msg.Contains("signed_in"))
+                  {
+                      if (shouldCloseOnNextSignInNotification)
+                      {
+                          shouldCloseOnNextSignInNotification = false;
+                          Hide();
+                      }
+                      if (didSignIn != null) { didSignIn(currentPlayerId); }
+                  }
+                  if (msg.Contains("avatar_edited"))
+                  {
+                      GetPlayerAvatarTexture((texture) =>
+                      {
+                          if (avatarDidChange != null) { avatarDidChange(texture); }
+                      }, true);
 
-                if(msg.Contains("invite_friend")){
-                    var phoneNumber = msg.Split("phone_number=")[1].Split("&")[0];
-                    var name = msg.Split("name=")[1].Split("&")[0];
-                    var iOSID = msg.Split("ios_id=")[1].Split("&")[0];
-                    var androidID = msg.Split("android_id=")[1].Split("&")[0];
-                    var gameName = msg.Split("game_name=")[1].Split("&")[0];
+                      GetPlayerInfo((playerInfo) =>
+                      {
+                          if (infoDidChange != null) { infoDidChange(playerInfo); }
+                      });
+                  }
 
-                    string iosLink = "https://apps.apple.com/app/" + iOSID;
-                    string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
+                  if (msg.Contains("invite_friend"))
+                  {
+                      var phoneNumber = msg.Split("phone_number=")[1].Split("&")[0];
+                      var name = msg.Split("name=")[1].Split("&")[0];
+                      var iOSID = msg.Split("ios_id=")[1].Split("&")[0];
+                      var androidID = msg.Split("android_id=")[1].Split("&")[0];
+                      var gameName = msg.Split("game_name=")[1].Split("&")[0];
 
-                    string message ="Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
-                    #if UNITY_ANDROID  
+                      string iosLink = "https://apps.apple.com/app/" + iOSID;
+                      string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
+
+                      string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
+#if UNITY_ANDROID
                     message += androidLink;
                     string URL = string.Format("sms:{0}?body={1}",phoneNumber,System.Uri.EscapeDataString(message));
-                    #endif
-        
-                    #if UNITY_IOS
+#endif
+
+#if UNITY_IOS
                     message += iosLink;
                     string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
-                    #endif
-        
-                    //Execute Text Message
-                    Application.OpenURL(URL);
-                    Hide();
-                }
+#endif
 
-                if(msg.Contains("convert_currency")){
-                    var amount = msg.Split("amount=")[1].Split("&")[0];
-                    var points = msg.Split("points=")[1].Split("&")[0];
-                    var currencyName = msg.Split("currency=")[1].Split("&")[0];
-                    
-                    didBuyCurrency(int.Parse(amount));
-                }
+                      //Execute Text Message
+                      Application.OpenURL(URL);
+                      Hide();
+                  }
+
+                  if (msg.Contains("convert_currency"))
+                  {
+                      var amount = msg.Split("amount=")[1].Split("&")[0];
+                      var points = msg.Split("points=")[1].Split("&")[0];
+                      var currencyName = msg.Split("currency=")[1].Split("&")[0];
+
+                      didBuyCurrency(int.Parse(amount));
+                  }
 
 
-                if(msg.Contains("close_window")){
-                    Hide();
-                    if(userDidClose != null){ userDidClose(); }
-                }
+                  if (msg.Contains("close_window"))
+                  {
+                      Hide();
+                      if (userDidClose != null) { userDidClose(); }
+                  }
 
-            }
+              }
 
-            
+
           },
           transparent: true,
           zoom: false,
@@ -561,18 +597,21 @@ public class GalaxyController : MonoBehaviour
           androidForceDarkMode: 1,  // 0: follow system setting, 1: force dark off, 2: force dark on
           wkAllowsLinkPreview: false
         );
-        #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
-        #endif
+#endif
         webViewObject.SetMargins(0, 0, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
-        if(loadInvisibly){
-            webViewObject.SetVisibility(false);    
-        } else {
+        if (loadInvisibly)
+        {
+            webViewObject.SetVisibility(false);
+        }
+        else
+        {
             webViewObject.SetVisibility(true);
         }
 
-        #if !UNITY_WEBPLAYER && !UNITY_WEBGL
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http"))
         {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
@@ -592,15 +631,15 @@ public class GalaxyController : MonoBehaviour
                 byte[] result = null;
                 if (src.Contains("://"))
                 {  // for Android
-                    #if UNITY_2018_4_OR_NEWER
+#if UNITY_2018_4_OR_NEWER
                     var unityWebRequest = UnityWebRequest.Get(src);
                     yield return unityWebRequest.SendWebRequest();
                     result = unityWebRequest.downloadHandler.data;
-                    #else
+#else
                     var www = new WWW(src);
                     yield return www;
                     result = www.bytes;
-                    #endif
+#endif
                 }
                 else
                 {
@@ -614,18 +653,18 @@ public class GalaxyController : MonoBehaviour
                 }
             }
         }
-        #else
+#else
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
             webViewObject.LoadURL("StreamingAssets/" + Url.Replace(" ", "%20"));
         }
-        #endif
+#endif
         yield break;
     }
 
     private void GetContacts()
-    { 
+    {
         Contacts.LoadContactList(onDone, onLoadFailed);
     }
 
@@ -639,15 +678,18 @@ public class GalaxyController : MonoBehaviour
         Contact c = Contacts.ContactsList[0];
         //Sanatize and upload contacts here
         var jsonToSend = "{\"contacts\": [";
-        for(var i = 0; i < Contacts.ContactsList.Count; i++){
+        for (var i = 0; i < Contacts.ContactsList.Count; i++)
+        {
             var contact = Contacts.ContactsList[i];
             var name = contact.Name;
             var numberArray = contact.Phones.Select(x => x.Number).ToArray();
-            
-            for(var j = 0; j < numberArray.Length; j++){
+
+            for (var j = 0; j < numberArray.Length; j++)
+            {
                 var number = numberArray[j];
                 jsonToSend += "{\"name\": \"" + name + "\", \"phone_number\": \"" + number + "\"}";
-                if(i != Contacts.ContactsList.Count - 1 || j != numberArray.Length - 1){
+                if (i != Contacts.ContactsList.Count - 1 || j != numberArray.Length - 1)
+                {
                     jsonToSend += ",";
                 }
             }
