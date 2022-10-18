@@ -19,7 +19,7 @@ public class PlayerRecord
     public string global_id;
     public string id;
     public int high_score;
-    public int rank;
+    public int ranking;
     public int total_players;
     public string nickname;
     public string profile_image_url;

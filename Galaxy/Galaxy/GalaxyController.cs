@@ -641,11 +641,11 @@ public class GalaxyController : MonoBehaviour
                 if (src.Contains("://"))
                 {  // for Android
 #if UNITY_2018_4_OR_NEWER
-                    using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(src))
-                    {
-                        yield return unityWebRequest.SendWebRequest();
-                        result = unityWebRequest.downloadHandler.data;
-                    }
+          using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(src))
+          {
+            yield return unityWebRequest.SendWebRequest();
+            result = unityWebRequest.downloadHandler.data;
+          }
 #else
                     using (var www = new WWW(src))
                     {
