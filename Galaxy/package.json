@@ -1,5 +1,5 @@
 {
-  "name": "com.intergalactic.galaxy",
+  "name": "com.luckytech.galaxy",
   "version": "1.0.0",
   "displayName": "Galaxy",
   "description": "Leaderboards, avatars, and currency",
@@ -11,7 +11,7 @@
     "currency"
   ],
   "author": {
-    "name": "Intergalactic Gaming, LLC",
+    "name": "Lucky Technology Corporation",
     "email": "support@galaxy.us",
     "url": "https://galaxy.us"
   },
