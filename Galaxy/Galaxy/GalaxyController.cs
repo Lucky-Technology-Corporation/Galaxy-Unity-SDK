@@ -78,6 +78,7 @@ public class GalaxyController : MonoBehaviour
         }
     }
 
+
     public string GetPlayerID()
     {
         return currentPlayerId;
@@ -109,17 +110,20 @@ public class GalaxyController : MonoBehaviour
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
 
-        UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
-        yield return request.SendWebRequest();
-        if (request.isNetworkError || request.isHttpError)
+        using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl))
         {
-            callback(null);
-        }
-        else
-        {
-            callback(((DownloadHandlerTexture)request.downloadHandler).texture);
+            yield return request.SendWebRequest();
+            if ((request.result == UnityWebRequest.Result.ConnectionError) || (request.result == UnityWebRequest.Result.ProtocolError))
+            {
+                callback(null);
+            }
+            else
+            {
+                callback(((DownloadHandlerTexture)request.downloadHandler).texture);
+            }
         }
     }
+
 
     public void GetPlayerInfo(System.Action<PlayerInfo> callback)
     {
@@ -186,6 +190,8 @@ public class GalaxyController : MonoBehaviour
 
     public void Hide()
     {
+        Destroy(webViewObject);
+        Destroy(touchBlocker);
         HideLeaderboard();
     }
     public void HideLeaderboard()
@@ -357,10 +363,10 @@ public class GalaxyController : MonoBehaviour
 #endif
 
 #if UNITY_ANDROID
-        Social.ReportScore((long)score, leaderboard_id, success =>
-        {
-            Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report to Google Play Services");
-        });
+    Social.ReportScore((long)score, leaderboard_id, success =>
+    {
+      Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report to Google Play Services");
+    });
 #endif
     }
 
@@ -377,22 +383,24 @@ public class GalaxyController : MonoBehaviour
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
 
-        var www = new UnityWebRequest(backendUrlBase + urlRelativePath, method);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
-        www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
-        www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-        www.SetRequestHeader("Content-Type", "application/json");
-        www.SetRequestHeader(GetAuthorizationType(), savedToken);
-        www.SetRequestHeader("Publishable-Key", SDKKey);
-        yield return www.SendWebRequest();
+        using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + urlRelativePath, method))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
+            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            www.SetRequestHeader(GetAuthorizationType(), savedToken);
+            www.SetRequestHeader("Publishable-Key", SDKKey);
+            yield return www.SendWebRequest();
 
-        if (www.result != UnityWebRequest.Result.Success)
-        {
-            Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
-        }
-        if (callback != null)
-        {
-            callback(www.downloadHandler.text);
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
+            }
+            if (callback != null)
+            {
+                callback(www.downloadHandler.text);
+            }
         }
     }
 
@@ -400,38 +408,39 @@ public class GalaxyController : MonoBehaviour
     {
         var bundle_id = Application.identifier;
 
-        var www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST");
-
-        string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
-        www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
-        www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-        www.SetRequestHeader("Content-Type", "application/json");
-
-        yield return www.SendWebRequest();
-        if (www.result != UnityWebRequest.Result.Success)
+        using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST"))
         {
-            Debug.LogError("Error creating an anonymous account: " + www.error);
-        }
-        else
-        {
-            savedToken = www.downloadHandler.text;
-            PlayerPrefs.SetString("token", savedToken);
+            string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
 
-            currentPlayerId = getPlayerIdFromJWT(savedToken);
-            PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
-
-            GetPlayerAvatarTexture((texture) =>
+            yield return www.SendWebRequest();
+            if (www.result != UnityWebRequest.Result.Success)
             {
-                if (avatarDidChange != null) { avatarDidChange(texture); }
-            }, true);
-
-            GetPlayerInfo((playerInfo) =>
+                Debug.LogError("Error creating an anonymous account: " + www.error);
+            }
+            else
             {
-                if (infoDidChange != null) { infoDidChange(playerInfo); }
-            });
-            var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
-            StartCoroutine(LoadUp(url, true));
+                savedToken = www.downloadHandler.text;
+                PlayerPrefs.SetString("token", savedToken);
+
+                currentPlayerId = getPlayerIdFromJWT(savedToken);
+                PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
+
+                GetPlayerAvatarTexture((texture) =>
+                {
+                    if (avatarDidChange != null) { avatarDidChange(texture); }
+                }, true);
+
+                GetPlayerInfo((playerInfo) =>
+                {
+                    if (infoDidChange != null) { infoDidChange(playerInfo); }
+                });
+                var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
+                StartCoroutine(LoadUp(url, true));
+            }
         }
     }
 
@@ -533,14 +542,14 @@ public class GalaxyController : MonoBehaviour
                   if (msg.Contains("avatar_edited"))
                   {
                       GetPlayerAvatarTexture((texture) =>
-                      {
-                          if (avatarDidChange != null) { avatarDidChange(texture); }
-                      }, true);
+                  {
+                      if (avatarDidChange != null) { avatarDidChange(texture); }
+                  }, true);
 
                       GetPlayerInfo((playerInfo) =>
-                      {
-                          if (infoDidChange != null) { infoDidChange(playerInfo); }
-                      });
+                  {
+                      if (infoDidChange != null) { infoDidChange(playerInfo); }
+                  });
                   }
 
                   if (msg.Contains("invite_friend"))
@@ -556,8 +565,8 @@ public class GalaxyController : MonoBehaviour
 
                       string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
 #if UNITY_ANDROID
-                    message += androidLink;
-                    string URL = string.Format("sms:{0}?body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+            message += androidLink;
+            string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
 #endif
 
 #if UNITY_IOS
@@ -598,7 +607,7 @@ public class GalaxyController : MonoBehaviour
           wkAllowsLinkPreview: false
         );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        webViewObject.bitmapRefreshCycle = 1;
+    webViewObject.bitmapRefreshCycle = 1;
 #endif
         webViewObject.SetMargins(0, 0, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
@@ -632,13 +641,17 @@ public class GalaxyController : MonoBehaviour
                 if (src.Contains("://"))
                 {  // for Android
 #if UNITY_2018_4_OR_NEWER
-                    var unityWebRequest = UnityWebRequest.Get(src);
-                    yield return unityWebRequest.SendWebRequest();
-                    result = unityWebRequest.downloadHandler.data;
+                    using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(src))
+                    {
+                        yield return unityWebRequest.SendWebRequest();
+                        result = unityWebRequest.downloadHandler.data;
+                    }
 #else
-                    var www = new WWW(src);
-                    yield return www;
-                    result = www.bytes;
+                    using (var www = new WWW(src))
+                    {
+                        yield return www;
+                        result = www.bytes;
+                    }
 #endif
                 }
                 else
