@@ -567,15 +567,16 @@ public class GalaxyController : MonoBehaviour
 #if UNITY_ANDROID
             message += androidLink;
             string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
+            Application.OpenURL(URL);
 #endif
 
 #if UNITY_IOS
                     message += iosLink;
                     string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    Application.OpenURL(URL);
 #endif
 
                       //Execute Text Message
-                      Application.OpenURL(URL);
                       Hide();
                   }
 
