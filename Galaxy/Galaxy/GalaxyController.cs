@@ -32,7 +32,6 @@ public class GalaxyController : MonoBehaviour
     public delegate void DidBuyCurrency(int amount);
     public DidBuyCurrency didBuyCurrency;
 
-    private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
     private string Url;
     private string savedToken = "";
@@ -56,6 +55,16 @@ public class GalaxyController : MonoBehaviour
         }
         else
         {
+            GetPlayerAvatarTexture((texture) =>
+            {
+                if (avatarDidChange != null) { avatarDidChange(texture); }
+            }, true);
+
+            GetPlayerInfo((playerInfo) =>
+            {
+                if (infoDidChange != null) { infoDidChange(playerInfo); }
+            });
+            
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
@@ -565,9 +574,9 @@ public class GalaxyController : MonoBehaviour
 
                       string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
 #if UNITY_ANDROID
-            message += androidLink;
-            string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
-            Application.OpenURL(URL);
+                    message += androidLink;
+                    string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
+                    Application.OpenURL(URL);
 #endif
 
 #if UNITY_IOS
