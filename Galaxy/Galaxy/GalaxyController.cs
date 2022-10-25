@@ -32,6 +32,7 @@ public class GalaxyController : MonoBehaviour
     public delegate void DidBuyCurrency(int amount);
     public DidBuyCurrency didBuyCurrency;
 
+    private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
     private string Url;
     private string savedToken = "";
@@ -64,27 +65,12 @@ public class GalaxyController : MonoBehaviour
             {
                 if (infoDidChange != null) { infoDidChange(playerInfo); }
             });
-            
+
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
-        Application.lowMemory += OnLowMemory;
+        
         DontDestroyOnLoad(gameObject);
-    }
-
-    private void OnLowMemory()
-    {
-        // remove and recreate webview if invisible
-        if (!webViewObject.GetComponent<Renderer>().isVisible)
-        {
-            Debug.Log("[Galaxy] Destroying and recreating webview to free up memory");
-            Destroy(webViewObject);
-            webViewObject = null;
-
-            savedToken = PlayerPrefs.GetString("token");
-            var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
-            StartCoroutine(LoadUp(url, true));
-        }
     }
 
 
@@ -194,6 +180,7 @@ public class GalaxyController : MonoBehaviour
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/points?token=" + savedToken);
+        Debug.Log(UrlToRefresh);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
@@ -201,12 +188,13 @@ public class GalaxyController : MonoBehaviour
     {
         Destroy(webViewObject);
         Destroy(touchBlocker);
-        HideLeaderboard();
+        webViewObject = null;
+        touchBlocker = null;
     }
+    
     public void HideLeaderboard()
     {
-        webViewObject.SetVisibility(false);
-        touchBlocker.SetActive(false);
+        Hide();
     }
 
     private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool skipTouchBlocker = false)
@@ -258,7 +246,7 @@ public class GalaxyController : MonoBehaviour
             cancelButton = loadingTextObject.AddComponent<Button>();
             cancelButton.onClick.AddListener(() =>
             {
-                HideLeaderboard();
+                // HideLeaderboard();
             });
 
         }
@@ -484,8 +472,8 @@ public class GalaxyController : MonoBehaviour
         // if(currentGalaxyLeaderboardID != ""){
         //   Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
         // }
-
-        webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+        Debug.Log("Load Up");
+        webViewObject = (new GameObject(System.Guid.NewGuid().ToString())).AddComponent<WebViewObject>();
         webViewObject.Init(
           cb: (msg) =>
           {
@@ -500,13 +488,18 @@ public class GalaxyController : MonoBehaviour
           },
           started: (msg) =>
           {
-              //add the loading + close button here?
+            if (msg.Contains("close_window"))
+            {
+                webViewObject.SetVisibility(false);
+                touchBlocker.SetActive(false);
+            }
           },
           hooked: (msg) =>
           {
           },
           ld: (msg) =>
           {
+            Debug.Log("load " + msg);
               if (cancelButton) { cancelButton.interactable = false; }
 
               if (!loadInvisibly)
@@ -574,18 +567,17 @@ public class GalaxyController : MonoBehaviour
 
                       string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
 #if UNITY_ANDROID
-                    message += androidLink;
-                    string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
-                    Application.OpenURL(URL);
+            message += androidLink;
+            string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
 #endif
 
 #if UNITY_IOS
                     message += iosLink;
                     string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
-                    Application.OpenURL(URL);
 #endif
 
                       //Execute Text Message
+                      Application.OpenURL(URL);
                       Hide();
                   }
 
@@ -598,16 +590,13 @@ public class GalaxyController : MonoBehaviour
                       didBuyCurrency(int.Parse(amount));
                   }
 
-
-                  if (msg.Contains("close_window"))
-                  {
-                      Hide();
-                      if (userDidClose != null) { userDidClose(); }
-                  }
+                    if (msg.Contains("close_window"))
+                    {
+                        Hide();
+                        if (userDidClose != null) { userDidClose(); }
+                    }
 
               }
-
-
           },
           transparent: true,
           zoom: false,
