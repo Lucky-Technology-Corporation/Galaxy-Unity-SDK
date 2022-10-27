@@ -246,7 +246,7 @@ public class GalaxyController : MonoBehaviour
             cancelButton = loadingTextObject.AddComponent<Button>();
             cancelButton.onClick.AddListener(() =>
             {
-                // HideLeaderboard();
+                HideLeaderboard();
             });
 
         }
@@ -566,15 +566,16 @@ public class GalaxyController : MonoBehaviour
                       string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
 
                       string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
-                      string URL = "";
 #if UNITY_ANDROID
-            message += androidLink;
-            URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
+                    message += androidLink;
+                    string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
+                    Application.OpenURL(URL);
 #endif
 
 #if UNITY_IOS
                     message += iosLink;
-                    URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    Application.OpenURL(URL);
 #endif
 
                       //Execute Text Message
