@@ -180,7 +180,6 @@ public class GalaxyController : MonoBehaviour
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/points?token=" + savedToken);
-        Debug.Log(UrlToRefresh);
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
@@ -404,7 +403,6 @@ public class GalaxyController : MonoBehaviour
     private IEnumerator SignInAnonymously()
     {
         var bundle_id = Application.identifier;
-
         using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST"))
         {
             string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
@@ -472,8 +470,7 @@ public class GalaxyController : MonoBehaviour
         // if(currentGalaxyLeaderboardID != ""){
         //   Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
         // }
-        Debug.Log("Load Up");
-        webViewObject = (new GameObject(System.Guid.NewGuid().ToString())).AddComponent<WebViewObject>();
+        webViewObject = FindObjectOfType<GalaxyController>().gameObject.AddComponent<WebViewObject>();
         webViewObject.Init(
           cb: (msg) =>
           {
@@ -499,7 +496,6 @@ public class GalaxyController : MonoBehaviour
           },
           ld: (msg) =>
           {
-              Debug.Log("load " + msg);
               if (cancelButton) { cancelButton.interactable = false; }
 
               if (!loadInvisibly)
@@ -605,7 +601,7 @@ public class GalaxyController : MonoBehaviour
           wkAllowsLinkPreview: false
         );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-    webViewObject.bitmapRefreshCycle = 1;
+        webViewObject.bitmapRefreshCycle = 1;
 #endif
         webViewObject.SetMargins(0, 0, 0, 0);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
@@ -639,11 +635,11 @@ public class GalaxyController : MonoBehaviour
                 if (src.Contains("://"))
                 {  // for Android
 #if UNITY_2018_4_OR_NEWER
-          using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(src))
-          {
-            yield return unityWebRequest.SendWebRequest();
-            result = unityWebRequest.downloadHandler.data;
-          }
+                    using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(src))
+                    {
+                        yield return unityWebRequest.SendWebRequest();
+                        result = unityWebRequest.downloadHandler.data;
+                    }
 #else
                     using (var www = new WWW(src))
                     {
