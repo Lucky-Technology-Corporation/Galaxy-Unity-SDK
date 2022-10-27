@@ -238,15 +238,15 @@ public class GalaxyController : MonoBehaviour
             loadingTextObject.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0.5f);
             loadingTextObject.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
             loadingTextObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
-            loadingTextObject.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 213);
+            loadingTextObject.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 85);
             loadingText.color = new Color(1, 1, 1, 1);
             loadingText.sprite = Resources.Load<Sprite>("loading");
 
-            cancelButton = loadingTextObject.AddComponent<Button>();
-            cancelButton.onClick.AddListener(() =>
-            {
-                HideLeaderboard();
-            });
+            // cancelButton = loadingTextObject.AddComponent<Button>();
+            // cancelButton.onClick.AddListener(() =>
+            // {
+            //     HideLeaderboard();
+            // });
 
         }
         else
