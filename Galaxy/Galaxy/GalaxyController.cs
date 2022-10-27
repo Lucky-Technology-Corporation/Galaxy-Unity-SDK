@@ -391,7 +391,7 @@ public class GalaxyController : MonoBehaviour
 
             if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.Log("Failed to post to " + urlRelativePath + " becuase " + www.error);
+                Debug.LogError("Request failed: " + www.error);
             }
             if (callback != null)
             {
@@ -465,11 +465,6 @@ public class GalaxyController : MonoBehaviour
 
     private IEnumerator LoadUp(string Url, bool loadInvisibly = false)
     {
-        // savedToken = PlayerPrefs.GetString("token");
-        // Url = (frontendUrlBase + "?token=" + savedToken);
-        // if(currentGalaxyLeaderboardID != ""){
-        //   Url = Url + "&leaderboard_id=" + currentGalaxyLeaderboardID;
-        // }
         webViewObject = FindObjectOfType<GalaxyController>().gameObject.AddComponent<WebViewObject>();
         webViewObject.Init(
           cb: (msg) =>
@@ -732,24 +727,3 @@ public class GalaxyController : MonoBehaviour
     }
 
 }
-
-// //Marked private during development
-// private void GetLeaderboard(System.Action<List<Player>> callback){ //Gets Leaderboard as JSON
-//   StartCoroutine(GetLeaderboardRequest("overview", callback));
-// }
-
-// private IEnumerator GetLeaderboardRequest(string type = "overview", System.Action<List<Player>> callback = null){ //"friends" "tier" or "overview"
-//     UnityWebRequest www = UnityWebRequest.Get(backendUrlBase + "/leaderboards");
-//     yield return www.SendWebRequest();
-//     if (www.result != UnityWebRequest.Result.Success)
-//     {
-//         Debug.Log("Get leaderboard error: " + www.error);
-//         callback(null);
-//     }
-//     else
-//     {
-//       var jsonString = www.downloadHandler.text;
-//       List<Player> leaderboard = JsonUtility.FromJson<List<Player>>(jsonString);
-//       callback(leaderboard);
-//     }
-// }
