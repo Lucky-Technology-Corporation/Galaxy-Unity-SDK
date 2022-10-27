@@ -577,9 +577,6 @@ public class GalaxyController : MonoBehaviour
                     string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
                     Application.OpenURL(URL);
 #endif
-
-                      //Execute Text Message
-                      Application.OpenURL(URL);
                       Hide();
                   }
 
