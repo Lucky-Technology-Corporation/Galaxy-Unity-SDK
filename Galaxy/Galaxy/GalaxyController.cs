@@ -69,7 +69,7 @@ public class GalaxyController : MonoBehaviour
             var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
             StartCoroutine(LoadUp(url, true));
         }
-        
+
         DontDestroyOnLoad(gameObject);
     }
 
@@ -191,7 +191,7 @@ public class GalaxyController : MonoBehaviour
         webViewObject = null;
         touchBlocker = null;
     }
-    
+
     public void HideLeaderboard()
     {
         Hide();
@@ -488,18 +488,18 @@ public class GalaxyController : MonoBehaviour
           },
           started: (msg) =>
           {
-            if (msg.Contains("close_window"))
-            {
-                webViewObject.SetVisibility(false);
-                touchBlocker.SetActive(false);
-            }
+              if (msg.Contains("close_window"))
+              {
+                  webViewObject.SetVisibility(false);
+                  touchBlocker.SetActive(false);
+              }
           },
           hooked: (msg) =>
           {
           },
           ld: (msg) =>
           {
-            Debug.Log("load " + msg);
+              Debug.Log("load " + msg);
               if (cancelButton) { cancelButton.interactable = false; }
 
               if (!loadInvisibly)
@@ -566,14 +566,15 @@ public class GalaxyController : MonoBehaviour
                       string androidLink = "https://play.google.com/store/apps/details?id=" + androidID;
 
                       string message = "Hey - I'm playing a game called " + gameName + " and I think you'd like it. Download it here: ";
+                      string URL = "";
 #if UNITY_ANDROID
             message += androidLink;
-            string URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
+            URL = string.Format("sms:{0}?body={1}", phoneNumber, System.Uri.EscapeDataString(message));
 #endif
 
 #if UNITY_IOS
                     message += iosLink;
-                    string URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
+                    URL = string.Format("sms:{0}?&body={1}",phoneNumber,System.Uri.EscapeDataString(message));
 #endif
 
                       //Execute Text Message
@@ -590,11 +591,11 @@ public class GalaxyController : MonoBehaviour
                       didBuyCurrency(int.Parse(amount));
                   }
 
-                    if (msg.Contains("close_window"))
-                    {
-                        Hide();
-                        if (userDidClose != null) { userDidClose(); }
-                    }
+                  if (msg.Contains("close_window"))
+                  {
+                      Hide();
+                      if (userDidClose != null) { userDidClose(); }
+                  }
 
               }
           },
