@@ -160,16 +160,18 @@ public class GalaxyController : MonoBehaviour
         SetupWebview(urlToSignIn, 0, 70, 0, 0);
     }
 
-    public void SaveState(string body = ""){
-        SendRequest("/users/game_state", body);
+    public void SaveState(string body = "")
+    {
+        SendRequest("/users/game_state", "{\"state\":" + body + "}");
     }
 
-    public void GetState(System.Action<string> callback){
+    public void GetState(System.Action<string> callback)
+    {
         SendRequest("/users/game_state", "", "GET", (response) =>
         {
             callback(response);
         });
-    }   
+    }
 
     public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
     {
