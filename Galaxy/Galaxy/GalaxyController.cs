@@ -44,6 +44,7 @@ public class GalaxyController : MonoBehaviour
     private Button cancelButton;
 
     private bool shouldCloseOnNextSignInNotification = false;
+    private bool gameIsActive = false;
 
     // Start is called before the first frame update
     void Awake()
@@ -71,6 +72,42 @@ public class GalaxyController : MonoBehaviour
         }
 
         DontDestroyOnLoad(gameObject);
+    }
+
+    void OnApplicationPause(bool isPaused)
+    {
+        if(isPaused){
+            Debug.Log("END");
+            EndReportingAnalytics();
+        }
+        else{
+            Debug.Log("START");
+            BeginReportingAnalytics();
+        }
+    }
+
+    void OnApplicationQuit() 
+    {
+        Debug.Log("QUIT");
+        EndReportingAnalytics();
+    }
+
+    private void BeginReportingAnalytics(){
+        gameIsActive = true;
+        SendRequest("/analytics/session_start");
+        StartCoroutine(ReportPingAnalytics());
+    }
+
+    private void EndReportingAnalytics(){
+        gameIsActive = false;
+        SendRequest("/analytics/session_end");
+    }
+
+    IEnumerator ReportPingAnalytics(){
+        while(gameIsActive){
+            SendRequest("/analytics/session_ping");
+            yield return new WaitForSeconds(90);
+        }
     }
 
 
@@ -435,8 +472,8 @@ public class GalaxyController : MonoBehaviour
                 PlayerPrefs.SetString("token", savedToken);
 
                 currentPlayerId = getPlayerIdFromJWT(savedToken);
-                PlayerPrefs.SetString("currentPlayerId", currentPlayerId);
-
+                PlayerPrefs.SetString("currentPlayerId", currentPlayerId); 
+                
                 GetPlayerAvatarTexture((texture) =>
                 {
                     if (avatarDidChange != null) { avatarDidChange(texture); }
