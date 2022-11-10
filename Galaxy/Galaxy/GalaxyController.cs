@@ -96,8 +96,8 @@ public class GalaxyController : MonoBehaviour
         //Check if we need to resubmit the last session
         int lastSessionStart = PlayerPrefs.GetInt("sessionStart");
         if(lastSessionStart != null){
-            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing") ?? lastSessionStart; //Call it 0 if we have no ping
-            int lastSessionDuration = lastSessionEnd - lastSessionStart;
+            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing", lastSessionStart); //Call it 0 if we have no ping
+            int sessionLength = lastSessionEnd - lastSessionStart;
             var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + lastSessionEnd + "}";
             addToUnsavedSessionArray(sessionBody);
 
@@ -107,7 +107,8 @@ public class GalaxyController : MonoBehaviour
         }
 
         gameIsActive = true;
-        int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+        System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+        int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
         PlayerPrefs.SetInt("sessionStart", currentTime);
         StartCoroutine(ReportPingAnalytics());
     }
@@ -115,9 +116,10 @@ public class GalaxyController : MonoBehaviour
     private void EndReportingAnalytics(){
         gameIsActive = false;
         int sessionStart = PlayerPrefs.GetInt("sessionStart");
-        int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+        System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+        int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
         int sessionLength = currentTime - sessionStart;
-        SendRequest("/analytics/report_session", "[{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}]", "POST", (response) => {
+        SendRequest("/analytics/report_session", "{\"sessions\": [{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}]}", "POST", (response) => {
             if(response != null){
                 PlayerPrefs.DeleteKey("sessionStart");
                 PlayerPrefs.DeleteKey("sessionPing");
@@ -126,8 +128,9 @@ public class GalaxyController : MonoBehaviour
     }
 
     IEnumerator ReportPingAnalytics(){
+        System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
         while(gameIsActive){
-            int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+            int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
             PlayerPrefs.SetInt("sessionPing", currentTime);
             yield return new WaitForSeconds(15);
         }
@@ -145,7 +148,7 @@ public class GalaxyController : MonoBehaviour
         
         listOfSessions = listOfSessions.Substring(0, listOfSessions.Length - 1); //remove trailing comma
 
-        var unsavedSessions = "[" + listOfSessions + "]";
+        var unsavedSessions = "{\"sessions\": [" + listOfSessions + "]}";
 
         SendRequest("/analytics/report_session", unsavedSessions, "POST", (response) => {
             if(response != null){
