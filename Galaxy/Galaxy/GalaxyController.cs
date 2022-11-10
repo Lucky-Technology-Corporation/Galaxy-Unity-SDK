@@ -93,12 +93,17 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void BeginReportingAnalytics(){
-        //check for last session
+        //Check if we need to resubmit the last session
         int lastSessionStart = PlayerPrefs.GetInt("sessionStart");
         if(lastSessionStart != null){
-            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing");
+            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing") ?? lastSessionStart; //Call it 0 if we have no ping
             int lastSessionDuration = lastSessionEnd - lastSessionStart;
-            SendRequest("/analytics/report_session", "{\"session_length\": " + sessionLength + ", \"ended_at\":" + lastSessionEnd + "}", "POST");
+            var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + lastSessionEnd + "}";
+            addToUnsavedSessionArray(sessionBody);
+
+            if(Application.internetReachability != NetworkReachability.NotReachable){
+                attemptToSaveUnsavedSessions();
+            }
         }
 
         gameIsActive = true;
@@ -113,8 +118,10 @@ public class GalaxyController : MonoBehaviour
         int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
         int sessionLength = currentTime - sessionStart;
         SendRequest("/analytics/report_session", "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}", "POST", (response) => {
-            PlayerPrefs.DeleteKey("sessionStart");
-            PlayerPrefs.DeleteKey("sessionPing");
+            if(response != null){
+                PlayerPrefs.DeleteKey("sessionStart");
+                PlayerPrefs.DeleteKey("sessionPing");
+            }
         });
     }
 
@@ -124,6 +131,27 @@ public class GalaxyController : MonoBehaviour
             PlayerPrefs.SetInt("sessionPing", currentTime);
             yield return new WaitForSeconds(15);
         }
+    }
+
+    private void addToUnsavedSessionArray(string session){
+        var unsavedSessions = PlayerPrefs.GetString("unsavedSessions") ?? "";
+        unsavedSessions += (session + ",");
+        PlayerPrefs.SetString("unsavedSessions", unsavedSessions);
+    }
+
+    private void attemptToSaveUnsavedSessions(){
+        var unsavedSessions = PlayerPrefs.GetString("unsavedSessions") ?? "";
+        PlayerPrefs.SetString("unsavedSessions", "");
+
+        var unsavedSessionsArray = unsavedSessions.Split(',');
+
+        for(var i = 0; i < unsavedSessionsArray.Length; i++){
+            SendRequest("/analytics/report_session", unsavedSessionsArray[i], "POST", (response) => {
+                if(response == null){
+                    addToUnsavedSessionArray(unsavedSessionsArray[i]);
+                }
+            });
+        }   
     }
 
 
@@ -458,6 +486,7 @@ public class GalaxyController : MonoBehaviour
             if (www.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError("Request failed: " + www.error);
+                callback(null);
             }
             if (callback != null)
             {
