@@ -117,7 +117,7 @@ public class GalaxyController : MonoBehaviour
         int sessionStart = PlayerPrefs.GetInt("sessionStart");
         int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
         int sessionLength = currentTime - sessionStart;
-        SendRequest("/analytics/report_session", "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}", "POST", (response) => {
+        SendRequest("/analytics/report_session", "[{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}]", "POST", (response) => {
             if(response != null){
                 PlayerPrefs.DeleteKey("sessionStart");
                 PlayerPrefs.DeleteKey("sessionPing");
@@ -140,18 +140,18 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void attemptToSaveUnsavedSessions(){
-        var unsavedSessions = PlayerPrefs.GetString("unsavedSessions") ?? "";
-        PlayerPrefs.SetString("unsavedSessions", "");
+        var listOfSessions = PlayerPrefs.GetString("unsavedSessions");
+        if(listOfSessions == null){ return; }
+        
+        listOfSessions = listOfSessions.Substring(0, listOfSessions.Length - 1); //remove trailing comma
 
-        var unsavedSessionsArray = unsavedSessions.Split(',');
+        var unsavedSessions = "[" + listOfSessions + "]";
 
-        for(var i = 0; i < unsavedSessionsArray.Length; i++){
-            SendRequest("/analytics/report_session", unsavedSessionsArray[i], "POST", (response) => {
-                if(response == null){
-                    addToUnsavedSessionArray(unsavedSessionsArray[i]);
-                }
-            });
-        }   
+        SendRequest("/analytics/report_session", unsavedSessions, "POST", (response) => {
+            if(response != null){
+                PlayerPrefs.SetString("unsavedSessions", "");
+            }
+        });
     }
 
 
