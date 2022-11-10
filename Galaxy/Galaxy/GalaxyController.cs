@@ -93,20 +93,36 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void BeginReportingAnalytics(){
+        //check for last session
+        int lastSessionStart = PlayerPrefs.GetInt("sessionStart");
+        if(lastSessionStart != null){
+            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing");
+            int lastSessionDuration = lastSessionEnd - lastSessionStart;
+            SendRequest("/analytics/report_session", "{\"session_length\": " + sessionLength + ", \"ended_at\":" + lastSessionEnd + "}", "POST");
+        }
+
         gameIsActive = true;
-        SendRequest("/analytics/session_start");
+        int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+        PlayerPrefs.SetInt("sessionStart", currentTime);
         StartCoroutine(ReportPingAnalytics());
     }
 
     private void EndReportingAnalytics(){
         gameIsActive = false;
-        SendRequest("/analytics/session_end");
+        int sessionStart = PlayerPrefs.GetInt("sessionStart");
+        int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+        int sessionLength = currentTime - sessionStart;
+        SendRequest("/analytics/report_session", "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}", "POST", (response) => {
+            PlayerPrefs.DeleteKey("sessionStart");
+            PlayerPrefs.DeleteKey("sessionPing");
+        });
     }
 
     IEnumerator ReportPingAnalytics(){
         while(gameIsActive){
-            SendRequest("/analytics/session_ping");
-            yield return new WaitForSeconds(90);
+            int currentTime = (DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
+            PlayerPrefs.SetInt("sessionPing", currentTime);
+            yield return new WaitForSeconds(15);
         }
     }
 
