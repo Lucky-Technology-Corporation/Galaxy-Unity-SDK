@@ -74,14 +74,19 @@ public class GalaxyController : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void Start(){
+        Debug.Log("START");
+        BeginReportingAnalytics();
+    }
+
     void OnApplicationPause(bool isPaused)
     {
         if(isPaused){
-            Debug.Log("END");
+            Debug.Log("PAUSE");
             EndReportingAnalytics();
         }
         else{
-            Debug.Log("START");
+            Debug.Log("UNPAUSE");
             BeginReportingAnalytics();
         }
     }
@@ -93,6 +98,8 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void BeginReportingAnalytics(){
+        if(gameIsActive){ return; }
+
         //Check if we need to resubmit the last session
         int lastSessionStart = PlayerPrefs.GetInt("sessionStart");
         if(lastSessionStart != null){
