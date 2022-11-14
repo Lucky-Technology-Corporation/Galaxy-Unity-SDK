@@ -98,49 +98,38 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void BeginReportingAnalytics(){
+        //Don't restart session if it's already running
         if(gameIsActive){ return; }
-
-        //Check if we need to resubmit the last session
-        int lastSessionStart = PlayerPrefs.GetInt("sessionStart");
-        if(lastSessionStart != null){
-            int lastSessionEnd = PlayerPrefs.GetInt("sessionPing", lastSessionStart); //Call it 0 if we have no ping
-            int sessionLength = lastSessionEnd - lastSessionStart;
-            var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + lastSessionEnd + "}";
-            addToUnsavedSessionArray(sessionBody);
-
-            if(Application.internetReachability != NetworkReachability.NotReachable){
-                attemptToSaveUnsavedSessions();
-            }
-        }
-
         gameIsActive = true;
+
+        //Set start time
         System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
         int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
         PlayerPrefs.SetInt("sessionStart", currentTime);
-        StartCoroutine(ReportPingAnalytics());
+
+        //Attempt to save any unsaved sessions
+        attemptToSaveUnsavedSessions();
     }
 
     private void EndReportingAnalytics(){
         gameIsActive = false;
+
+        //Get and delete saved start time
         int sessionStart = PlayerPrefs.GetInt("sessionStart");
+        if(sessionStart == null || sessionStart == 0){ return; }
+        PlayerPrefs.DeleteKey("sessionStart");
+
+        //Calculate session body
         System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
         int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
         int sessionLength = currentTime - sessionStart;
-        SendRequest("/analytics/report_session", "{\"sessions\": [{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}]}", "POST", (response) => {
-            if(response != null){
-                PlayerPrefs.DeleteKey("sessionStart");
-                PlayerPrefs.DeleteKey("sessionPing");
-            }
-        });
-    }
+        var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}";
 
-    IEnumerator ReportPingAnalytics(){
-        System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
-        while(gameIsActive){
-            int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
-            PlayerPrefs.SetInt("sessionPing", currentTime);
-            yield return new WaitForSeconds(15);
-        }
+        //Save locally
+        addToUnsavedSessionArray(sessionBody);
+
+        //Save remotely if possible
+        attemptToSaveUnsavedSessions();
     }
 
     private void addToUnsavedSessionArray(string session){
@@ -150,13 +139,13 @@ public class GalaxyController : MonoBehaviour
     }
 
     private void attemptToSaveUnsavedSessions(){
+        //Ensure internet is connected and there is an unsaved session
+        if(Application.internetReachability == NetworkReachability.NotReachable){ return; }
         var listOfSessions = PlayerPrefs.GetString("unsavedSessions");
-        if(listOfSessions == null){ return; }
+        if(listOfSessions == null|| listOfSessions == ""){ return; }
         
         listOfSessions = listOfSessions.Substring(0, listOfSessions.Length - 1); //remove trailing comma
-
         var unsavedSessions = "{\"sessions\": [" + listOfSessions + "]}";
-
         SendRequest("/analytics/report_session", unsavedSessions, "POST", (response) => {
             if(response != null){
                 PlayerPrefs.SetString("unsavedSessions", "");
@@ -500,7 +489,9 @@ public class GalaxyController : MonoBehaviour
             }
             if (callback != null)
             {
-                callback(www.downloadHandler.text);
+                var callbackPayload = www.downloadHandler.text;
+                if(callbackPayload == null){ callbackPayload = ""; }
+                callback(callbackPayload);
             }
         }
     }
