@@ -484,7 +484,7 @@ public class GalaxyController : MonoBehaviour
 
             if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("Request failed: " + www.error);
+                Debug.Log("Internet may be disconnected. A request failed: " + www.error);
                 callback(null);
             }
             if (callback != null)
