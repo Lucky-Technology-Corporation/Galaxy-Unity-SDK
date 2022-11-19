@@ -253,7 +253,10 @@ public class GalaxyController : MonoBehaviour
         });
     }
 
-    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
+    public void Show(){
+        ShowLeaderboard();
+    }
+    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool hideCloseButton = false)
     {
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
@@ -261,6 +264,9 @@ public class GalaxyController : MonoBehaviour
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/leaderboards/" + leaderboardId + "?token=" + savedToken);
+        if(hideCloseButton == true){
+            UrlToRefresh += "&hideCloseButton=true";
+        }
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 

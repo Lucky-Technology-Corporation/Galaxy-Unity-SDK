@@ -13,10 +13,6 @@ using UnityEngine.UI;
 //Make this a prefab!
 public class GalaxyController : MonoBehaviour
 {
-    [Header("Publishable Key")]
-    [Tooltip("Get this from the developer dashboard")]
-    public string SDKKey;
-
     public delegate void AvatarDidChange(Texture2D newAvatar);
     public AvatarDidChange avatarDidChange;
 
@@ -28,9 +24,6 @@ public class GalaxyController : MonoBehaviour
 
     public delegate void UserDidClose();
     public UserDidClose userDidClose;
-
-    public delegate void DidBuyCurrency(int amount);
-    public DidBuyCurrency didBuyCurrency;
 
     private string currentGalaxyLeaderboardID = "";
     private WebViewObject webViewObject;
@@ -173,7 +166,11 @@ public class GalaxyController : MonoBehaviour
         });
     }
 
-    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0)
+    public void Show(){
+        ShowLeaderboard();
+    }
+
+    public void ShowLeaderboard(string leaderboardId = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool hideCloseButton = false)
     {
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
@@ -181,6 +178,9 @@ public class GalaxyController : MonoBehaviour
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/leaderboards/" + leaderboardId + "?token=" + savedToken);
+        if(hideCloseButton == true){
+            UrlToRefresh += "&hideCloseButton=true";
+        }
         SetupWebview(UrlToRefresh, leftMargin, topMargin, rightMargin, bottomMargin);
     }
 
@@ -190,11 +190,6 @@ public class GalaxyController : MonoBehaviour
         Destroy(touchBlocker);
         webViewObject = null;
         touchBlocker = null;
-    }
-
-    public void HideLeaderboard()
-    {
-        Hide();
     }
 
     private void SetupWebview(string url = "", int leftMargin = 0, int topMargin = 0, int rightMargin = 0, int bottomMargin = 0, bool skipTouchBlocker = false)
@@ -248,11 +243,6 @@ public class GalaxyController : MonoBehaviour
             touchBlocker.SetActive(true);
             cancelButton.interactable = true;
         }
-    }
-
-    public void OnMouseDown()
-    {
-        return;
     }
 
     public void ReportScore(double score, string leaderboard_id = "", System.Action<PlayerRecord> callback = null)
