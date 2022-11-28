@@ -3,7 +3,7 @@ using System.Text;
 using System.Xml;
 using UnityEditor.Android;
 
-public class ModifyUnityAndroidAppManifestSample : IPostGenerateGradleAndroidProject
+public class ModifyUnityAndroidAppManifest : IPostGenerateGradleAndroidProject
 {
     public void OnPostGenerateGradleAndroidProject(string basePath)
     {
