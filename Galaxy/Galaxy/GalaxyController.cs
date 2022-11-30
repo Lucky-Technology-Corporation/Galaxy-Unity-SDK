@@ -13,8 +13,8 @@ using UnityEngine.UI;
 //Make this a prefab!
 public class GalaxyController : MonoBehaviour
 {
-    [Header("Publishable Key")]
-    [Tooltip("Get this from the developer dashboard")]
+    [Header("Publishable Key (optional)")]
+    [Tooltip("Leave blank if you don't have one")]
     public string SDKKey;
 
     public delegate void AvatarDidChange(Texture2D newAvatar);
@@ -75,25 +75,24 @@ public class GalaxyController : MonoBehaviour
     }
 
     void Start(){
-        Debug.Log("START");
+        if(SDKKey == null || SDKKey == ""){
+            // Debug.Log("No SDK Key provided so Galaxy will use the default account");
+        }
         BeginReportingAnalytics();
     }
 
     void OnApplicationPause(bool isPaused)
     {
         if(isPaused){
-            Debug.Log("PAUSE");
             EndReportingAnalytics();
         }
         else{
-            Debug.Log("UNPAUSE");
             BeginReportingAnalytics();
         }
     }
 
     void OnApplicationQuit() 
     {
-        Debug.Log("QUIT");
         EndReportingAnalytics();
     }
 
@@ -153,6 +152,70 @@ public class GalaxyController : MonoBehaviour
         });
     }
 
+    public void ReportRevenue(double amount, string product_id = ""){
+        var body = "{\"amount\": " + amount;
+        if(product_id == ""){
+            body += "}";
+        }
+        else{
+            body += ", \"product_id\": \"" + product_id + "\"}";
+        } 
+        
+        SendRequest("/analytics/report_revenue", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting revenue");
+            }
+        });
+    }
+
+    public void ReportAd(double amount = 1){
+        var body = "{\"amount\": " + amount + "}";
+
+        SendRequest("/analytics/report_revenue", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting ad");
+            }
+        });
+    }
+    public void ReportEvent(string name, double amount = 0.0){
+        var body = "{\"event_name\": \"" + name;
+        if(amount == 0.0){
+            body += "\"}";
+        }
+        else{
+            body += "\", \"value\": \"" + amount + "\"}";
+        } 
+        SendRequest("/analytics/report_event", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting event");
+            }
+        });
+    }
+    public void ReportEvent(string name, bool value = true){
+        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
+        SendRequest("/analytics/report_event", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting event");
+            }
+        });
+    }
+
+    public void UpdateEvent(string name, double value){
+        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
+        SendRequest("/analytics/update_event", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting event");
+            }
+        });
+    }
+    public void UpdateEvent(string name, bool value){
+        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
+        SendRequest("/analytics/update_event", body, "POST", (response) => {
+            if(response == null){
+                Debug.LogError("[Galaxy]: Error reporting event");
+            }
+        });
+    }
 
     public string GetPlayerID()
     {
@@ -260,7 +323,7 @@ public class GalaxyController : MonoBehaviour
     {
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            Debug.LogError("No internet connection");
+            Debug.LogError("[Galaxy]: No internet connection");
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/leaderboards/" + leaderboardId + "?token=" + savedToken);
@@ -275,7 +338,7 @@ public class GalaxyController : MonoBehaviour
         if (didBuyCurrency == null) { Debug.LogError("didBuyCurrency delegate not set"); return; }
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            Debug.LogError("No internet connection");
+            Debug.LogError("[Galaxy]: No internet connection");
             return;
         }
         var UrlToRefresh = (frontendUrlBase + "/points?token=" + savedToken);
@@ -413,20 +476,30 @@ public class GalaxyController : MonoBehaviour
         if (leaderboard_id == "")
         {
             body += "}";
-            SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
-            {
-                PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                if (callback != null) { callback(playerRecord); }
-            });
+            if(callback == null){
+                SendRequest("/leaderboards/submit-individual-score-async", body, "POST");
+            }
+            else {
+                SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
+                {
+                    PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
+                    if (callback != null) { callback(playerRecord); }
+                });
+            }
         }
         else
         {
             body += ", \"leaderboard_id\": \"" + leaderboard_id + "\"}";
-            SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
-            {
-                PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
-                if (callback != null) { callback(playerRecord); }
-            });
+            if(callback == null){
+                SendRequest("/leaderboards/submit-individual-score-async", body, "POST");
+            }
+            else {
+                SendRequest("/leaderboards/submit-individual-score", body, "POST", (response) =>
+                {
+                    PlayerRecord playerRecord = JsonUtility.FromJson<PlayerRecord>(response);
+                    if (callback != null) { callback(playerRecord); }
+                });
+            }
         }
 
         ReportToPlatform(score, leaderboard_id);
@@ -477,7 +550,9 @@ public class GalaxyController : MonoBehaviour
         {
             yield return new WaitUntil(() => savedToken != null && savedToken != "");
         }
-
+        if(SDKKey == null){
+            SDKKey = "afd8434b-e433-420c-8914-14f77eb07a95"; //default key
+        }
         using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + urlRelativePath, method))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(body);
@@ -505,38 +580,43 @@ public class GalaxyController : MonoBehaviour
     private IEnumerator SignInAnonymously()
     {
         var bundle_id = Application.identifier;
-        using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST"))
-        {
-            string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
-            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
-
-            yield return www.SendWebRequest();
-            if (www.result != UnityWebRequest.Result.Success)
+        if(bundle_id == null || bundle_id == ""){
+            Debug.LogError("[Galaxy]: You need to set a bundle ID in File > Build Settings > Player Settings > Other Settings > Identification > Bundle Identifier");
+        }
+        else{
+            using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + "/signup/anonymous", "POST"))
             {
-                Debug.LogError("Error creating an anonymous account: " + www.error);
-            }
-            else
-            {
-                savedToken = www.downloadHandler.text;
-                PlayerPrefs.SetString("token", savedToken);
+                string bodyJsonString = "{ \"bundle_id\": \"" + bundle_id + "\", \"device_id\": \"" + SystemInfo.deviceUniqueIdentifier + "\" }";
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(bodyJsonString);
+                www.uploadHandler = (UploadHandler)new UploadHandlerRaw(bodyRaw);
+                www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+                www.SetRequestHeader("Content-Type", "application/json");
 
-                currentPlayerId = getPlayerIdFromJWT(savedToken);
-                PlayerPrefs.SetString("currentPlayerId", currentPlayerId); 
-                
-                GetPlayerAvatarTexture((texture) =>
+                yield return www.SendWebRequest();
+                if (www.result != UnityWebRequest.Result.Success)
                 {
-                    if (avatarDidChange != null) { avatarDidChange(texture); }
-                }, true);
+                    Debug.LogError("[Galaxy]: Error creating an anonymous account: " + www.error);
+                }
+                else
+                {
+                    savedToken = www.downloadHandler.text;
+                    PlayerPrefs.SetString("token", savedToken);
 
-                GetPlayerInfo((playerInfo) =>
-                {
-                    if (infoDidChange != null) { infoDidChange(playerInfo); }
-                });
-                var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
-                StartCoroutine(LoadUp(url, true));
+                    currentPlayerId = getPlayerIdFromJWT(savedToken);
+                    PlayerPrefs.SetString("currentPlayerId", currentPlayerId); 
+                    
+                    GetPlayerAvatarTexture((texture) =>
+                    {
+                        if (avatarDidChange != null) { avatarDidChange(texture); }
+                    }, true);
+
+                    GetPlayerInfo((playerInfo) =>
+                    {
+                        if (infoDidChange != null) { infoDidChange(playerInfo); }
+                    });
+                    var url = (frontendUrlBase + "/leaderboards/?token=" + savedToken);
+                    StartCoroutine(LoadUp(url, true));
+                }
             }
         }
     }
@@ -774,7 +854,7 @@ public class GalaxyController : MonoBehaviour
 
     private void onLoadFailed(string reason)
     {
-        Debug.LogError("Error getting contacts: " + reason);
+        Debug.LogError("[Galaxy]: Error getting contacts: " + reason);
     }
 
     private void onDone()
