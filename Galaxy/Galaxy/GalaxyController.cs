@@ -200,23 +200,6 @@ public class GalaxyController : MonoBehaviour
         });
     }
 
-    public void UpdateEvent(string name, double value){
-        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
-        SendRequest("/analytics/update_event", body, "POST", (response) => {
-            if(response == null){
-                Debug.LogError("[Galaxy]: Error reporting event");
-            }
-        });
-    }
-    public void UpdateEvent(string name, bool value){
-        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
-        SendRequest("/analytics/update_event", body, "POST", (response) => {
-            if(response == null){
-                Debug.LogError("[Galaxy]: Error reporting event");
-            }
-        });
-    }
-
     public string GetPlayerID()
     {
         return currentPlayerId;
