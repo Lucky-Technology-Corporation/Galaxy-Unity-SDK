@@ -178,7 +178,7 @@ public class GalaxyController : MonoBehaviour
         });
     }
     public void ReportEvent(string name, double amount = 0.0){
-        var body = "{\"event_name\": \"" + name;
+        var body = "{\"key\": \"" + name;
         if(amount == 0.0){
             body += "\"}";
         }
@@ -192,7 +192,7 @@ public class GalaxyController : MonoBehaviour
         });
     }
     public void ReportEvent(string name, bool value = true){
-        var body = "{\"event_name\": \"" + name + "\", \"value\": \"" + value + "\"}";
+        var body = "{\"key\": \"" + name + "\", \"value\": \"" + value + "\"}";
         SendRequest("/analytics/report_event", body, "POST", (response) => {
             if(response == null){
                 Debug.LogError("[Galaxy]: Error reporting event");
@@ -548,8 +548,9 @@ public class GalaxyController : MonoBehaviour
 
             if (www.result != UnityWebRequest.Result.Success)
             {
+                Debug.Log("Attempted to make a request to " + urlRelativePath + " but failed");
                 Debug.Log("Internet may be disconnected. A request failed: " + www.error);
-                callback(null);
+                if(callback != null) { callback(null); }
             }
             if (callback != null)
             {
