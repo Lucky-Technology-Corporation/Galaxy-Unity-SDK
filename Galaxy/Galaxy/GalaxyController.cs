@@ -746,12 +746,6 @@ namespace GalaxySDK{
                         didBuyCurrency(int.Parse(amount));
                     }
 
-                    if (msg.Contains("close_window"))
-                    {
-                        Hide();
-                        if (userDidClose != null) { userDidClose(); }
-                    }
-
                 }
             },
             transparent: true,
