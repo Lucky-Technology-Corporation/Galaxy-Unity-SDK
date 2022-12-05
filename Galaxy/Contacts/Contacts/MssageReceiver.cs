@@ -1,55 +1,56 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-//helper class
-//it listen for messages comming from plugin
-public class MssageReceiver : MonoBehaviour {
+namespace GalaxySDK{
 
-	void OnInitializeDone( string message )
-	{
-		Contacts.OnInitializeDone ();
-	}
+	public class MssageReceiver : MonoBehaviour {
 
-	void OnInitializeFail( string message )
-	{
-		Debug.LogError( "OnInitializeFail : " + message );
-		Contacts.OnInitializeFail (message);
-	}
+		void OnInitializeDone( string message )
+		{
+			Contacts.OnInitializeDone ();
+		}
 
-	void Log( string message )
-	{
-		Debug.Log( "internal log : " + message );
-	}
+		void OnInitializeFail( string message )
+		{
+			Debug.LogError( "OnInitializeFail : " + message );
+			Contacts.OnInitializeFail (message);
+		}
 
-	void Error( string error )
-	{
-		Debug.LogError( "internal error : " + error );
-	}
+		void Log( string message )
+		{
+			Debug.Log( "internal log : " + message );
+		}
 
-	void OnContactReady( string id )
-	{
+		void Error( string error )
+		{
+			Debug.LogError( "internal error : " + error );
+		}
 
-		debug( "OnContactReady: " + id);
+		void OnContactReady( string id )
+		{
 
-		if( string.IsNullOrEmpty( id ))
+			debug( "OnContactReady: " + id);
+
+			if( string.IsNullOrEmpty( id ))
+				return;
+
+			int index = int.Parse( id);
+			Contacts.GetContact( index );
+		}
+
+		/*void OnContactReady( string data )
+		{
 			return;
+			//debug( data );
+			byte[] bytes = System.Text.Encoding.UTF8.GetBytes( data );
+			Contact c = new Contact();
+			c.FromBytes( bytes );
+			Contacts.ContactsList.Add( c );
+		}*/
 
-		int index = int.Parse( id);
-		Contacts.GetContact( index );
-	}
-
-	/*void OnContactReady( string data )
-	{
-		return;
-		//debug( data );
-		byte[] bytes = System.Text.Encoding.UTF8.GetBytes( data );
-		Contact c = new Contact();
-		c.FromBytes( bytes );
-		Contacts.ContactsList.Add( c );
-	}*/
-
-	void debug( string message )
-	{
-		//Debug.Log( message );
+		void debug( string message )
+		{
+			//Debug.Log( message );
+		}
 	}
 }

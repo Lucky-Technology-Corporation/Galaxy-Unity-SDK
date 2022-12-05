@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class ContactsLoader  {
+namespace GalaxySDK {
+	public class ContactsLoader  {
 
-	public List<Contact>  ToLoad = new List<Contact>();
+		public List<Contact>  ToLoad = new List<Contact>();
+	}
 }
