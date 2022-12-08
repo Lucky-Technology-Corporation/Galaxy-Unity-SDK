@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Text;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -36,7 +37,7 @@ namespace GalaxySDK{
         private WebViewObject webViewObject;
         private string Url;
         private string savedToken = "";
-        private string backendUrlBase = "https://api.galaxy.us/api/v1";
+        private string backendUrlBase = "https://api.galaxysdk.com/api/v1";
         private string frontendUrlBase = "https://app.galaxy.us";
         private string currentPlayerId = "";
         private Texture2D cachedProfileImage;
@@ -187,15 +188,69 @@ namespace GalaxySDK{
             } 
             SendRequest("/analytics/report_event", body, "POST", (response) => {
                 if(response == null){
-                    Debug.LogError("[Galaxy]: Error reporting event");
+                    Debug.LogError("[Galaxy]: Error reporting event. Have you created an event with the name " + name + " in the dashboard?");
                 }
             });
         }
-        public void ReportEvent(string name, bool value = true){
-            var body = "{\"key\": \"" + name + "\", \"value\": \"" + value + "\"}";
-            SendRequest("/analytics/report_event", body, "POST", (response) => {
+
+        public void GetValue(string name, System.Action<float> callback){
+            string savedValue = PlayerPrefs.GetString("_galaxy_dv_"+name);
+            Debug.Log(savedValue);
+            if(false && savedValue != null && savedValue != ""){
+                Debug.Log("..");
+                callback(float.Parse(savedValue));
+            }
+            else{
+                var body = "{\"name\": \"" + name + "\"}";
+                Debug.Log(body);
+                SendRequest("/analytics/get_value", body, "POST", (response) => {
+                    if(response == null){
+                        Debug.LogError("[Galaxy]: Error getting dynamic value. Have you created a dynamic value with the name " + name + " in the dashboard?");
+                        callback(0f);
+                    }
+                    else{
+                        var info = JsonUtility.FromJson<DynamicValue>(response);
+                        Debug.Log(JsonUtility.ToJson(info, true));
+                        float floatResult = info.value;
+                        PlayerPrefs.SetString("_galaxy_dv_"+name, floatResult.ToString());
+                        callback(floatResult);
+                    }
+                });
+            }
+        }
+
+        //Needs testing!
+        public void GetLeaderboardData(System.Action<Leaderboard> callback, string leaderboard_id = ""){
+            if(leaderboard_id == ""){
+                if(PlayerPrefs.GetString("galaxy_default_leaderboard_id") != null){
+                    leaderboard_id = PlayerPrefs.GetString("galaxy_default_leaderboard_id");
+                    MakeLeaderboardDataRequest(leaderboard_id, callback);
+                }
+                else{
+                    var bundle_id = Application.identifier;
+                    SendRequest("/lookup/bundle_id/" + bundle_id, "", "GET", (response) => {
+                        if(response == null){
+                            Debug.LogError("[Galaxy]: Error getting leaderboard data");
+                        }
+                        else{
+                            var info = JsonUtility.FromJson<LeaderboardID>(response);
+                            PlayerPrefs.SetString("galaxy_default_leaderboard_id", info.leaderboard_id);
+                            MakeLeaderboardDataRequest(info.leaderboard_id, callback);
+                        }
+                    });
+                }
+            }
+        }
+
+        private void MakeLeaderboardDataRequest(string leaderboard_id, System.Action<Leaderboard> callback){
+            SendRequest("/leaderboards/"+leaderboard_id+"/public", "", "GET", (response) => {
                 if(response == null){
-                    Debug.LogError("[Galaxy]: Error reporting event");
+                    Debug.LogError("[Galaxy]: Error getting leaderboard data");
+                    callback(null);
+                }
+                else{
+                    var info = JsonUtility.FromJson<Leaderboard>(response);
+                    callback(info);
                 }
             });
         }
@@ -387,17 +442,11 @@ namespace GalaxySDK{
                 loadingText.color = new Color(1, 1, 1, 1);
                 loadingText.sprite = Resources.Load<Sprite>("loading");
 
-                // cancelButton = loadingTextObject.AddComponent<Button>();
-                // cancelButton.onClick.AddListener(() =>
-                // {
-                //     HideLeaderboard();
-                // });
-
             }
             else
             {
                 touchBlocker.SetActive(true);
-                cancelButton.interactable = true;
+                if(cancelButton) { cancelButton.interactable = true; }
             }
         }
 
@@ -583,6 +632,7 @@ namespace GalaxySDK{
                     }
                     else
                     {
+                        Debug.Log("[Galaxy]: Signed into anonymous account");
                         savedToken = www.downloadHandler.text;
                         PlayerPrefs.SetString("token", savedToken);
 
@@ -638,10 +688,12 @@ namespace GalaxySDK{
             },
             err: (msg) =>
             {
+                Debug.Log("[Galaxy] LoadUp Error 1 " + msg);
                 Hide();
             },
             httpErr: (msg) =>
             {
+                Debug.Log("[Galaxy] LoadUp Error 2 " + msg);
                 Hide();
             },
             started: (msg) =>
@@ -886,5 +938,27 @@ namespace GalaxySDK{
             return "Anonymous-Authorization";
         }
 
+    }
+
+    class DynamicValue{
+        public float value;
+        public DynamicValue(string name, float value){
+            this.value = value;
+        }
+    }
+
+    public class Leaderboard{
+        public Record[] records;
+    }
+    public class Record{
+        public string id;
+        public int rank;
+        public float score;
+        public string nickname;
+        public string avatar_url;
+    }
+
+    class LeaderboardID{
+        public string leaderboard_id;
     }
 }
