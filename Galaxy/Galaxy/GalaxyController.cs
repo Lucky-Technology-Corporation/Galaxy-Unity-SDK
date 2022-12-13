@@ -122,7 +122,7 @@ namespace GalaxySDK{
             System.DateTime epochStart = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
             int currentTime = (int)Math.Round((DateTime.UtcNow - epochStart).TotalSeconds);
             int sessionLength = currentTime - sessionStart;
-            var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime +  "}";
+            var sessionBody = "{\"session_length\": " + sessionLength + ", \"ended_at\":" + currentTime + ", \"platform\": \"" + Application.platform.ToString() + "\", \"language\": \"" + Application.systemLanguage.ToString() + "\", \"version\": \"" + Application.version + "\"}";
 
             //Save locally
             addToUnsavedSessionArray(sessionBody);
@@ -158,7 +158,7 @@ namespace GalaxySDK{
                 body += "}";
             }
             else{
-                body += ", \"product_id\": \"" + product_id + "\"}";
+                body += ", \"product_id\": \"" + product_id + "\", \"platform\": \"" + Application.platform.ToString() + "\", \"language\": \"" + Application.systemLanguage.ToString() + "\", \"version\": \"" + Application.version + "\"}";
             } 
             
             SendRequest("/analytics/report_revenue", body, "POST", (response) => {
@@ -169,7 +169,7 @@ namespace GalaxySDK{
         }
 
         public void ReportAd(double amount = 1){
-            var body = "{\"amount\": " + amount + "}";
+            var body = "{\"amount\": " + amount + ", \"platform\": \"" + Application.platform.ToString() + "\", \"language\": \"" + Application.systemLanguage.ToString() + "\", \"version\": \"" + Application.version + "\"}";
 
             SendRequest("/analytics/report_ad", body, "POST", (response) => {
                 if(response == null){
@@ -177,13 +177,14 @@ namespace GalaxySDK{
                 }
             });
         }
+        
         public void ReportEvent(string name, double amount = 0.0){
             var body = "{\"key\": \"" + name;
             if(amount == 0.0){
-                body += "\"}";
+                body += ("\", \"platform\": \"" + Application.platform.ToString() + "\", \"language\": \"" + Application.systemLanguage.ToString() + "\", \"version\": \"" + Application.version + "\"}");
             }
             else{
-                body += "\", \"value\": \"" + amount + "\"}";
+                body += ("\", \"value\": " + amount + ", \"platform\": \"" + Application.platform.ToString() + "\", \"language\": \"" + Application.systemLanguage.ToString() + "\", \"version\": \"" + Application.version + "\"}");
             } 
             SendRequest("/analytics/report_event", body, "POST", (response) => {
                 if(response == null){
