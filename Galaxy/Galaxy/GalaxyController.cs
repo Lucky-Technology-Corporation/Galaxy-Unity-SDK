@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Text;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -193,33 +192,38 @@ namespace GalaxySDK{
             });
         }
 
-        public void GetValue(string name, System.Action<float> callback){
+        public void GetValue(string name, System.Action<float?> callback){
             string savedValue = PlayerPrefs.GetString("_galaxy_dv_"+name);
             Debug.Log(savedValue);
-            if(false && savedValue != null && savedValue != ""){
-                Debug.Log("..");
+            if(savedValue != null && savedValue != ""){
                 callback(float.Parse(savedValue));
             }
             else{
-                var body = "{\"name\": \"" + name + "\"}";
-                Debug.Log(body);
-                SendRequest("/analytics/get_value", body, "POST", (response) => {
-                    if(response == null){
-                        Debug.LogError("[Galaxy]: Error getting dynamic value. Have you created a dynamic value with the name " + name + " in the dashboard?");
-                        callback(0f);
-                    }
-                    else{
-                        var info = JsonUtility.FromJson<DynamicValue>(response);
-                        Debug.Log(JsonUtility.ToJson(info, true));
-                        float floatResult = info.value;
-                        PlayerPrefs.SetString("_galaxy_dv_"+name, floatResult.ToString());
-                        callback(floatResult);
-                    }
-                });
+                if (Application.internetReachability == NetworkReachability.NotReachable)
+                {
+                    Debug.LogError("[Galaxy]: No internet connection and no cached value for " + name + ".");
+                    callback(null);
+                }
+                else{
+                    var body = "{\"name\": \"" + name + "\"}";
+                    Debug.Log(body);
+                    SendRequest("/analytics/get_value", body, "POST", (response) => {
+                        if(response == null){
+                            Debug.LogError("[Galaxy]: Error getting dynamic value. Have you created a dynamic value with the name " + name + " in the dashboard?");
+                            callback(null);
+                        }
+                        else{
+                            var info = JsonUtility.FromJson<DynamicValue>(response);
+                            Debug.Log(JsonUtility.ToJson(info, true));
+                            float floatResult = info.value;
+                            PlayerPrefs.SetString("_galaxy_dv_"+name, floatResult.ToString());
+                            callback(floatResult);
+                        }
+                    });
+                }
             }
         }
 
-        //Needs testing!
         public void GetLeaderboardData(System.Action<Leaderboard> callback, string leaderboard_id = ""){
             if(leaderboard_id == ""){
                 if(PlayerPrefs.GetString("galaxy_default_leaderboard_id") != null){
@@ -534,7 +538,7 @@ namespace GalaxySDK{
                 }
             }
 
-            ReportToPlatform(score, leaderboard_id);
+            // ReportToPlatform(score, leaderboard_id);
         }
 
         public void UpdateSkill(string matchId, string[] placements)
@@ -556,18 +560,18 @@ namespace GalaxySDK{
 
         private void ReportToPlatform(double score, string leaderboard_id)
         {
-    #if UNITY_IOS
-        Social.ReportScore ((long)score, leaderboard_id, success => {
-            Debug.Log(success ? "Reported score to GameCenter successfully" : "Failed to report to GameCenter");
-        });
-    #endif
+    // #if UNITY_IOS
+    //     Social.ReportScore ((long)score, leaderboard_id, success => {
+    //         Debug.Log(success ? "Reported score to GameCenter successfully" : "Failed to report to GameCenter");
+    //     });
+    // #endif
 
-    #if UNITY_ANDROID
-        Social.ReportScore((long)score, leaderboard_id, success =>
-        {
-        Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report to Google Play Services");
-        });
-    #endif
+    // #if UNITY_ANDROID
+    //     Social.ReportScore((long)score, leaderboard_id, success =>
+    //     {
+    //     Debug.Log(success ? "Reported score to Google Play Services successfully" : "Failed to report to Google Play Services");
+    //     });
+    // #endif
         }
 
 
@@ -582,7 +586,7 @@ namespace GalaxySDK{
             {
                 yield return new WaitUntil(() => savedToken != null && savedToken != "");
             }
-            if(SDKKey == null){
+            if(SDKKey == null || SDKKey == ""){
                 SDKKey = "afd8434b-e433-420c-8914-14f77eb07a95"; //default key
             }
             using (UnityWebRequest www = new UnityWebRequest(backendUrlBase + urlRelativePath, method))
