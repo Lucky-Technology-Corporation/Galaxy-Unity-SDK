@@ -172,7 +172,7 @@ namespace GalaxySDK{
         public void ReportAd(double amount = 1){
             var body = "{\"amount\": " + amount + "}";
 
-            SendRequest("/analytics/report_revenue", body, "POST", (response) => {
+            SendRequest("/analytics/report_ad", body, "POST", (response) => {
                 if(response == null){
                     Debug.LogError("[Galaxy]: Error reporting ad");
                 }
